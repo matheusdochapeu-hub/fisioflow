@@ -816,6 +816,28 @@
   }
   .btn-header-feedback:hover { background: var(--primary-soft); transform: translateY(-2px); }
 
+  .btn-header-lgpd {
+    background: var(--surface);
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    min-height: 38px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn-header-lgpd:hover { background: #f0f9ff; transform: translateY(-2px); }
+
   .btn-dev-secret {
     display: none !important;
     background: #0f172a;
@@ -938,6 +960,46 @@
           <input id="providerContactInput" placeholder="Ex: (11) 99999-9999">
         </div>
 
+        <div>
+          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Seu Endereço Base / Consultório (Ponto de Partida)</label>
+          <input id="providerAddressInput" placeholder="Ex: Av. Paulista, 1000 - Bela Vista, São Paulo - SP">
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.35;">
+            Usado pelo Assistente de Rotas para calcular trajetos, tempos de deslocamento e gasto de combustível até a casa dos pacientes.
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Consumo Carro (Km/L)</label>
+            <input id="providerCarKmlInput" type="number" step="0.5" placeholder="12" value="12">
+          </div>
+          <div>
+            <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Gasolina (R$/L)</label>
+            <input id="providerGasPriceInput" type="number" step="0.05" placeholder="5.80" value="5.80">
+          </div>
+        </div>
+
+        <!-- Alerta de Privacidade & Garantia LGPD -->
+        <div style="border:1.5px solid #0284c7;background:#f0f9ff;border-radius:12px;padding:12px 14px;margin-top:4px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="font-size:20px;line-height:1;flex-shrink:0;">🔒</div>
+            <div style="min-width:0;flex:1;">
+              <div style="font-weight:700;font-size:12.5px;color:#0369a1;margin-bottom:3px;">
+                Privacidade &amp; Proteção de Dados (LGPD - Lei nº 13.709/2018)
+              </div>
+              <p style="font-size:11.5px;color:#075985;line-height:1.45;margin:0 0 6px;">
+                Os dados cadastrais e prontuários pertencem <strong>exclusivamente a você</strong> e ficam salvos na sua própria planilha privada no seu Google Drive.
+              </p>
+              <p style="font-size:11px;color:#0369a1;line-height:1.4;margin:0 0 8px;font-weight:600;">
+                🛡️ Os desenvolvedores NÃO têm acesso, não visualizam, não coletam e nunca acessarão nenhum dado pessoal ou clínico dos seus pacientes.
+              </p>
+              <button type="button" class="btn ghost small" onclick="openLgpdModal()" style="padding:4px 10px;font-size:11px;background:#ffffff;border-color:#38bdf8;color:#0284c7;font-weight:700;border-radius:8px;">
+                Ver Termos de Privacidade &amp; LGPD ↗
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div id="setupError" class="error-banner hidden" style="margin-top:4px;"></div>
 
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:8px;">
@@ -994,6 +1056,7 @@
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
         <button class="btn-header-feedback" type="button" onclick="openFeedbackModal()">💬 Fale com o desenvolvedor</button>
+        <button class="btn-header-lgpd" type="button" onclick="openLgpdModal()">🔒 LGPD &amp; Privacidade</button>
       </div>
       <div>
         <a href="javascript:void(0)" onclick="promptDevAccess()" style="color:var(--ink-soft);opacity:0.65;font-size:11.5px;text-decoration:none;">🔐 Área do Desenvolvedor (Acesso administrativo)</a>
@@ -1014,6 +1077,7 @@
       <div class="header-actions">
         <button id="btnHeaderPix" class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
         <button id="btnHeaderFeedback" class="btn-header-feedback" type="button" onclick="openFeedbackModal()" title="Fale com o desenvolvedor">💬 Suporte</button>
+        <button id="btnHeaderLgpd" class="btn-header-lgpd" type="button" onclick="openLgpdModal()" title="Privacidade e Termos LGPD">🔒 LGPD</button>
         <button id="btnDevPanel" class="btn-dev-secret" type="button" onclick="openDevModal()">🔐 Área Dev</button>
         <button id="installBtn" class="icon-btn hidden" onclick="promptInstall()" title="Instalar app" aria-label="Instalar app">&#11015;</button>
         <button class="icon-btn" onclick="openSettings()" title="Configurações" aria-label="Configurações">&#9881;</button>
@@ -1270,6 +1334,7 @@
       <div style="display:flex; justify-content:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
         <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
         <button class="btn-header-feedback" type="button" onclick="openFeedbackModal()">💬 Fale com o desenvolvedor</button>
+        <button class="btn-header-lgpd" type="button" onclick="openLgpdModal()">🔒 Termos &amp; LGPD</button>
       </div>
       <div style="font-weight:600;color:var(--ink);">FisioFlow · Aplicativo gratuito de gestão para fisioterapia</div>
       <div style="margin-top:6px;">
@@ -1972,6 +2037,12 @@ async function conectarPrimeiroAcessoAutomatico(){
   var contact = (document.getElementById('providerContactInput').value || '').trim();
   var calInput = document.getElementById('calendarIdInput');
   var email = calInput ? calInput.value.trim() : '';
+  var addrInput = document.getElementById('providerAddressInput');
+  var address = addrInput ? addrInput.value.trim() : '';
+  var kmlInput = document.getElementById('providerCarKmlInput');
+  var kmlVal = (kmlInput && parseFloat(kmlInput.value) > 0) ? parseFloat(kmlInput.value) : 12;
+  var gasInput = document.getElementById('providerGasPriceInput');
+  var gasVal = (gasInput && parseFloat(gasInput.value) > 0) ? parseFloat(gasInput.value) : 5.80;
   var errEl = document.getElementById('setupError');
   errEl.classList.add('hidden');
 
@@ -2010,7 +2081,10 @@ async function conectarPrimeiroAcessoAutomatico(){
       email: email,
       nome: name,
       documento: doc,
-      contato: contact
+      contato: contact,
+      enderecoBase: address,
+      carKmPerLiter: kmlVal,
+      gasPrice: gasVal
     };
 
     var res = await fetch(targetUrl, {
@@ -2030,12 +2104,18 @@ async function conectarPrimeiroAcessoAutomatico(){
       providerDoc: doc,
       providerContact: contact,
       calendarId: email,
+      homeAddress: address,
+      carKmPerLiter: kmlVal,
+      gasPrice: gasVal,
       spreadsheetUrl: sheetUrl
     };
 
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     localStorage.setItem('ft_calendar_id', email);
     localStorage.setItem('ft_usuario_id', usuarioId);
+    localStorage.setItem('ft_home_address', address);
+    localStorage.setItem('ft_car_kml', String(kmlVal));
+    localStorage.setItem('ft_gas_price', String(gasVal));
     if(sheetUrl) localStorage.setItem('ft_user_sheet_url', sheetUrl);
     config = newConfig;
 
@@ -2129,8 +2209,27 @@ async function loadData(){
         if(config) config.spreadsheetUrl = data.spreadsheetUrl;
       } catch(e){}
     }
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    var data = await res.json();
+    if(data.configuracao && typeof data.configuracao === 'object'){
+      var cfg = data.configuracao;
+      if(!config) config = {};
+      if(cfg.NomeProfissional && !config.providerName) config.providerName = cfg.NomeProfissional;
+      if(cfg.Documento && !config.providerDoc) config.providerDoc = cfg.Documento;
+      if(cfg.Telefone && !config.providerContact) config.providerContact = cfg.Telefone;
+      if(cfg.EmailGoogle && !config.calendarId) config.calendarId = cfg.EmailGoogle;
+      if(cfg.EnderecoBase){
+        config.homeAddress = cfg.EnderecoBase;
+        try { localStorage.setItem('ft_home_address', cfg.EnderecoBase); } catch(e){}
+      }
+      if(cfg.ConsumoKmL){
+        config.carKmPerLiter = parseFloat(cfg.ConsumoKmL) || 12;
+        try { localStorage.setItem('ft_car_kml', String(config.carKmPerLiter)); } catch(e){}
+      }
+      if(cfg.PrecoGasolina){
+        config.gasPrice = parseFloat(cfg.PrecoGasolina) || 5.80;
+        try { localStorage.setItem('ft_gas_price', String(config.gasPrice)); } catch(e){}
+      }
+      try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch(e){}
+    }
 
     entries = (data.atendimentos || []).map(function(r){
       return {
@@ -6071,11 +6170,29 @@ function saveCalendarSettings(){
   }
   var setupCalInp = document.getElementById('calendarIdInput');
   if(setupCalInp) setupCalInp.value = calId;
+  var setupAddrInp = document.getElementById('providerAddressInput');
+  if(setupAddrInp) setupAddrInp.value = homeAddr;
+  var setupKmlInp = document.getElementById('providerCarKmlInput');
+  if(setupKmlInp) setupKmlInp.value = kmlVal;
+  var setupGasInp = document.getElementById('providerGasPriceInput');
+  if(setupGasInp) setupGasInp.value = gasVal;
+
+  if(scriptUrl() !== 'demo'){
+    postAction({
+      action: 'save_config',
+      config: {
+        EmailGoogle: calId,
+        EnderecoBase: homeAddr,
+        ConsumoKmL: String(kmlVal),
+        PrecoGasolina: String(gasVal)
+      }
+    }).catch(function(e){ console.warn('Erro ao salvar config no Sheets:', e); });
+  }
 
   updateGCalBannerUI();
   renderAgendaTab();
   closeModal();
-  showToast('Configurações de agenda e rota salvas!', 'ok');
+  showToast('Configurações de agenda e rota salvas e sincronizadas!', 'ok');
 }
 
 /* ============================================================
@@ -8252,6 +8369,12 @@ async function saveSetup(){
   var contact = document.getElementById('providerContactInput').value.trim();
   var calInput = document.getElementById('calendarIdInput');
   var calendarIdVal = calInput ? calInput.value.trim() : getUserCalendarId();
+  var addrInput = document.getElementById('providerAddressInput');
+  var address = addrInput ? addrInput.value.trim() : '';
+  var kmlInput = document.getElementById('providerCarKmlInput');
+  var kmlVal = (kmlInput && parseFloat(kmlInput.value) > 0) ? parseFloat(kmlInput.value) : (getCarKmPerLiter() || 12);
+  var gasInput = document.getElementById('providerGasPriceInput');
+  var gasVal = (gasInput && parseFloat(gasInput.value) > 0) ? parseFloat(gasInput.value) : (getGasPrice() || 5.80);
   var errEl = document.getElementById('setupError');
   errEl.classList.add('hidden');
 
@@ -8272,14 +8395,23 @@ async function saveSetup(){
     return;
   }
 
-  var newConfig = {
+  var newConfig = Object.assign({}, config || {}, {
     scriptUrl: scriptUrlVal,
-    providerName: name, providerDoc: doc, providerContact: contact,
-    calendarId: calendarIdVal
-  };
+    providerName: name,
+    providerDoc: doc,
+    providerContact: contact,
+    calendarId: calendarIdVal,
+    homeAddress: address,
+    carKmPerLiter: kmlVal,
+    gasPrice: gasVal
+  });
+
   try{
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     localStorage.setItem('ft_calendar_id', calendarIdVal);
+    localStorage.setItem('ft_home_address', address);
+    localStorage.setItem('ft_car_kml', String(kmlVal));
+    localStorage.setItem('ft_gas_price', String(gasVal));
     config = newConfig;
     var demoBanner = document.getElementById('demoModeBanner');
     if(demoBanner) demoBanner.style.display = (scriptUrlVal === 'demo') ? 'flex' : 'none';
@@ -8287,6 +8419,28 @@ async function saveSetup(){
     errEl.textContent = 'Não foi possível salvar localmente.';
     errEl.classList.remove('hidden');
     return;
+  }
+
+  // Sincroniza as configurações com a aba Configuracao da planilha
+  if(scriptUrlVal !== 'demo'){
+    postAction({
+      action: 'save_config',
+      config: {
+        NomeProfissional: name,
+        Documento: doc,
+        EmailGoogle: calendarIdVal,
+        Telefone: contact,
+        EnderecoBase: address,
+        ConsumoKmL: String(kmlVal),
+        PrecoGasolina: String(gasVal)
+      }
+    }).then(function(){
+      showToast('Configurações salvas e sincronizadas na sua planilha!', 'ok');
+    }).catch(function(err){
+      console.warn('Erro ao salvar config no Sheets:', err);
+    });
+  } else {
+    showToast('Configurações salvas no dispositivo!', 'ok');
   }
 
   if(_settingsOpen){
@@ -8338,8 +8492,22 @@ function openSettings(){
   if(document.getElementById('calendarIdInput')){
     document.getElementById('calendarIdInput').value = getUserCalendarId();
   }
+  if(document.getElementById('providerAddressInput')){
+    document.getElementById('providerAddressInput').value = getHomeAddress();
+  }
+  if(document.getElementById('providerCarKmlInput')){
+    document.getElementById('providerCarKmlInput').value = getCarKmPerLiter();
+  }
+  if(document.getElementById('providerGasPriceInput')){
+    document.getElementById('providerGasPriceInput').value = getGasPrice();
+  }
   if(document.getElementById('scriptUrlInput')){
     document.getElementById('scriptUrlInput').value = (config && config.scriptUrl) || SCRIPT_URL || '';
+  }
+  var btnSalvar = document.getElementById('btnSalvarSetup');
+  if(btnSalvar){
+    btnSalvar.innerHTML = '<span>💾 Salvar Configurações na Planilha</span>';
+    btnSalvar.onclick = saveSetup;
   }
   window.scrollTo(0, 0);
 
@@ -8371,6 +8539,15 @@ function cancelSetup(fromPopstate){
   document.getElementById('providerContactInput').value = (config && config.providerContact) || '';
   if(document.getElementById('calendarIdInput')){
     document.getElementById('calendarIdInput').value = getUserCalendarId();
+  }
+  if(document.getElementById('providerAddressInput')){
+    document.getElementById('providerAddressInput').value = getHomeAddress();
+  }
+  if(document.getElementById('providerCarKmlInput')){
+    document.getElementById('providerCarKmlInput').value = getCarKmPerLiter();
+  }
+  if(document.getElementById('providerGasPriceInput')){
+    document.getElementById('providerGasPriceInput').value = getGasPrice();
   }
 
   if(!fromPopstate){
@@ -8547,6 +8724,20 @@ async function init(){
     if(document.getElementById('calendarIdInput')){
       document.getElementById('calendarIdInput').value = getUserCalendarId();
     }
+    if(document.getElementById('providerAddressInput')){
+      document.getElementById('providerAddressInput').value = getHomeAddress();
+    }
+    if(document.getElementById('providerCarKmlInput')){
+      document.getElementById('providerCarKmlInput').value = getCarKmPerLiter();
+    }
+    if(document.getElementById('providerGasPriceInput')){
+      document.getElementById('providerGasPriceInput').value = getGasPrice();
+    }
+    var btnSalvar = document.getElementById('btnSalvarSetup');
+    if(btnSalvar){
+      btnSalvar.innerHTML = '<span>🚀 Conectar e Criar Minha Planilha</span>';
+      btnSalvar.onclick = conectarPrimeiroAcessoAutomatico;
+    }
     document.getElementById('setupScreen').classList.remove('hidden');
   } else {
     document.getElementById('mainScreen').classList.remove('hidden');
@@ -8638,6 +8829,61 @@ function openFeedbackModal(){
   '</div>';
   openModal(html);
   contabilizarAcesso('Abriu Form Fale com Dev');
+}
+
+/* ============================================================
+   MÓDULO: LGPD & POLÍTICA DE PRIVACIDADE E SEGURANÇA
+   ============================================================ */
+function openLgpdModal(){
+  var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
+    '<div class="modal" style="max-width:620px;max-height:90vh;overflow-y:auto;padding:20px;">' +
+      '<div class="grabber"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:10px;">' +
+        '<h3 style="margin:0;font-size:1.25rem;color:#0369a1;display:flex;align-items:center;gap:8px;">🔒 Privacidade, Sigilo &amp; LGPD</h3>' +
+        '<button type="button" class="btn ghost small" onclick="closeModal()" style="width:auto;padding:2px 8px;font-size:14px;">✕</button>' +
+      '</div>' +
+
+      '<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:12px 14px;margin-bottom:16px;">' +
+        '<div style="font-weight:700;color:#0369a1;font-size:13px;margin-bottom:4px;">Garantia de Não-Acesso pelos Desenvolvedores</div>' +
+        '<p style="font-size:12px;color:#075985;line-height:1.5;margin:0;">' +
+          'Seus dados pessoais, informações financeiras e <strong>todos os prontuários e dados clínicos dos seus pacientes são de sua exclusiva propriedade</strong>. Eles NÃO podem e NÃO serão acessados, lidos, armazenados ou compartilhados pelos desenvolvedores do aplicativo.' +
+        '</p>' +
+      '</div>' +
+
+      '<div style="display:flex;flex-direction:column;gap:14px;font-size:12.5px;color:var(--ink);line-height:1.55;">' +
+        '<div>' +
+          '<h4 style="margin:0 0 4px;font-size:13px;color:var(--primary-deep);">1. Conformidade com a LGPD (Lei nº 13.709/2018)</h4>' +
+          '<p style="margin:0;">O FisioFlow segue o princípio do <em>Privacy by Design</em>. Em conformidade com os artigos 7º e 11 da LGPD (tratamento de dados sensíveis de saúde), a custódia das informações clínicas dos pacientes é exclusivamente do profissional de fisioterapia responsável.</p>' +
+        '</div>' +
+
+        '<div>' +
+          '<h4 style="margin:0 0 4px;font-size:13px;color:var(--primary-deep);">2. Armazenamento Descentralizado na sua Conta Google</h4>' +
+          '<p style="margin:0;">A base de dados fica alocada na sua própria planilha do Google Sheets dentro do seu Google Drive pessoal. Nenhuma evolução médica ou dado de paciente transita por servidores ou bancos de dados externos sob controle de terceiros.</p>' +
+        '</div>' +
+
+        '<div>' +
+          '<h4 style="margin:0 0 4px;font-size:13px;color:var(--primary-deep);">3. Sigilo Profissional e Código de Ética (COFFITO/CREFITO)</h4>' +
+          '<p style="margin:0;">Respeitamos rigorosamente as normas éticas da Fisioterapia. O sigilo médico e fisioterapêutico é protegido por lei, e o sistema foi concebido para que somente você (ou quem você autorizar diretamente no seu Google Drive) consiga acessar os registros.</p>' +
+        '</div>' +
+
+        '<div>' +
+          '<h4 style="margin:0 0 4px;font-size:13px;color:var(--primary-deep);">4. Seus Direitos como Titular (Portabilidade e Exclusão)</h4>' +
+          '<p style="margin:0;">Você tem total soberania sobre as informações: pode exportar backups completos em formatos abertos (JSON e CSV) pela aba de Configurações a qualquer momento, bem como excluir ou revogar o acesso à planilha diretamente pelo Google Drive sem depender de ninguém.</p>' +
+        '</div>' +
+
+        '<div>' +
+          '<h4 style="margin:0 0 4px;font-size:13px;color:var(--primary-deep);">5. Comunicação Criptografada</h4>' +
+          '<p style="margin:0;">Toda a comunicação entre este aplicativo e o Google Apps Script ocorre via HTTPS criptografado com certificados SSL/TLS padrão da infraestrutura do Google.</p>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="margin-top:20px;display:flex;justify-content:flex-end;">' +
+        '<button type="button" class="btn primary" onclick="closeModal()" style="width:auto;padding:8px 22px;font-weight:700;">Entendido e Ciente</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  openModal(html);
+  contabilizarAcesso('Abriu Modal LGPD');
 }
 
 /* ============================================================

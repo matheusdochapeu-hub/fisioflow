@@ -10,6 +10,7 @@ var SHEET_EVO = 'Evolucoes';
 var SHEET_EXE = 'Exercicios';
 var SHEET_ROT = 'Rotinas';
 var SHEET_AGEND = 'Agendamentos';
+var SHEET_CONFIG = 'Configuracao';
 
 var ATEND_HEADERS = ['ID', 'Paciente', 'Data', 'Hora', 'Valor', 'Status', 'DataPagamento', 'Latitude', 'Longitude', 'CriadoEm'];
 var PAC_HEADERS = [
@@ -25,6 +26,7 @@ var AGEND_HEADERS = [
   'ID', 'PacienteID', 'PacienteNome', 'Data', 'Hora', 'DuracaoMin',
   'Valor', 'Status', 'Observacao', 'CalendarEventId', 'CalendarId', 'AtendimentoId', 'CriadoEm'
 ];
+var CONFIG_HEADERS = ['Chave', 'Valor', 'AtualizadoEm'];
 
 function ensureHeaders_(sheet, expectedHeaders) {
   if (sheet.getLastRow() === 0) {
@@ -119,6 +121,18 @@ function resolveSpreadsheet_(usuarioId, meta) {
     getAgendSheet_();
     getExeSheet_();
     getRotSheet_();
+    getConfigSheet_();
+    if (meta) {
+      saveConfigInSheet_({
+        NomeProfissional: nome,
+        Documento: doc,
+        EmailGoogle: email,
+        Telefone: meta.contato || meta.telefone || '',
+        EnderecoBase: meta.enderecoBase || meta.homeAddress || '',
+        ConsumoKmL: String(meta.carKmPerLiter || '12'),
+        PrecoGasolina: String(meta.gasPrice || '5.80')
+      });
+    }
     _currentSS_ = prevSS;
 
     if (email && email.indexOf('@') > -1) {
@@ -159,6 +173,44 @@ function getEvoSheet_()   { return getSheet_(SHEET_EVO, EVO_HEADERS); }
 function getExeSheet_()   { return getSheet_(SHEET_EXE, EXE_HEADERS); }
 function getRotSheet_()   { return getSheet_(SHEET_ROT, ROT_HEADERS); }
 function getAgendSheet_() { return getSheet_(SHEET_AGEND, AGEND_HEADERS); }
+function getConfigSheet_() { return getSheet_(SHEET_CONFIG, CONFIG_HEADERS); }
+
+function saveConfigInSheet_(cfg) {
+  if (!cfg || typeof cfg !== 'object') return;
+  var sheet = getConfigSheet_();
+  var data = sheet.getDataRange().getValues();
+  var existing = {};
+  for (var i = 1; i < data.length; i++) {
+    var k = String(data[i][0]).trim();
+    if (k) existing[k] = i + 1;
+  }
+  var now = new Date();
+  for (var key in cfg) {
+    if (!cfg.hasOwnProperty(key)) continue;
+    var val = String(cfg[key] !== undefined && cfg[key] !== null ? cfg[key] : '');
+    if (existing[key]) {
+      sheet.getRange(existing[key], 2, 1, 2).setValues([[val, now]]);
+    } else {
+      sheet.appendRow([key, val, now]);
+      existing[key] = sheet.getLastRow();
+    }
+  }
+}
+
+function getConfigObject_() {
+  try {
+    var sheet = getConfigSheet_();
+    var data = sheet.getDataRange().getValues();
+    var cfg = {};
+    for (var i = 1; i < data.length; i++) {
+      var k = String(data[i][0]).trim();
+      if (k) cfg[k] = data[i][1];
+    }
+    return cfg;
+  } catch(e) {
+    return {};
+  }
+}
 
 function getTimeZone_() {
   try {
@@ -520,6 +572,7 @@ function doGet(e) {
     success: true,
     usuarioId: usuarioId,
     spreadsheetUrl: targetSs ? targetSs.getUrl() : '',
+    configuracao: getConfigObject_(),
     atendimentos: sheetToObjects_(getAtendSheet_()),
     pacientes: sheetToObjects_(getPacSheet_()),
     evolucoes: sheetToObjects_(getEvoSheet_()),
@@ -627,6 +680,24 @@ function doPost(e) {
       result.usuarioId = usuarioId;
       result.spreadsheetId = _currentSS_ ? _currentSS_.getId() : '';
       result.spreadsheetUrl = _currentSS_ ? _currentSS_.getUrl() : '';
+      saveConfigInSheet_({
+        NomeProfissional: body.nome || '',
+        Documento: body.documento || '',
+        EmailGoogle: body.email || '',
+        Telefone: body.contato || body.telefone || '',
+        EnderecoBase: body.enderecoBase || body.homeAddress || '',
+        ConsumoKmL: String(body.carKmPerLiter || '12'),
+        PrecoGasolina: String(body.gasPrice || '5.80')
+      });
+      result.config = getConfigObject_();
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    /* ---------- Salvar Configurações na Planilha ---------- */
+    if (body.action === 'save_config') {
+      saveConfigInSheet_(body.config || body);
+      result.config = getConfigObject_();
       return ContentService.createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }

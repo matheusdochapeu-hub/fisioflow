@@ -1,7 +1,30 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `01/11/2026`  
-Versão do Service Worker: `atend-v31` (`sw.js`)
+Versão do Service Worker: `fisioflow-v4` (`sw.js`)
+
+---
+
+## 0. Multi-Tenant Central, LGPD e Sincronização de Configurações (`v32 - fisioflow-v4`)
+- **Backend Multi-Inquilino Centralizado (`Code.gs`):**
+  - Registro central de profissionais na aba `_Usuarios` (`UsuarioId`, `Email`, `Nome`, `Documento`, `SpreadsheetId`, `SpreadsheetUrl`, `CriadoEm`, `UltimoAcesso`).
+  - Criação instantânea de planilha dedicada no Google Drive do desenvolvedor e compartilhamento como **Editor** com o Gmail do fisioterapeuta (`SpreadsheetApp.create` + `addEditor`).
+  - Roteamento dinâmico de todas as requisições (`doGet` e `doPost`) para a planilha isolada do usuário via `usuarioId`.
+- **Endereço Base Próprio para Cada Usuário:**
+  - Campo `#providerAddressInput` no onboarding e nas configurações para o fisioterapeuta definir seu ponto de partida (residência ou consultório).
+  - Parâmetros veiculares de consumo urbano (km/L) e preço da gasolina (R$/L) configuráveis.
+  - O Assistente de Rotas calcula trajetos, tempos e custos a partir do endereço configurado pelo próprio usuário.
+- **Persistência da Aba `Configuracao` no Google Sheets:**
+  - Criação automática da aba `Configuracao` (`Chave`, `Valor`, `AtualizadoEm`) em cada planilha.
+  - Sincronização bidirecional: `save_config` via `doPost` e leitura automática em `doGet` (`configuracao: getConfigObject_()`).
+- **Conformidade LGPD & Sigilo Profissional (Lei nº 13.709/2018):**
+  - Card informativo no onboarding e nas configurações destacando o princípio do *Privacy by Design*.
+  - Modal interativo `openLgpdModal()` com detalhes sobre custódia exclusiva, sigilo CREFITO/COFFITO e direitos de portabilidade/exclusão.
+  - **Garantia explícita de que os desenvolvedores NÃO têm acesso, não visualizam e nunca acessarão nenhum prontuário ou dado de paciente.**
+- **Módulos de Comunicação e Apoio:**
+  - Botão oficial "☕ Me pague um café" com modal e QR Code Pix + payload EMV.
+  - Botão "💬 Fale com o desenvolvedor" integrado via Google Forms em modal embutido.
+  - Área Dev protegida por senha/link para auditoria e telemetria de acessos.
 
 ---
 

@@ -39,10 +39,12 @@ Todos os dados ficam armazenados de forma **gratuita, segura e privada** na pró
 - Backup local (JSON/CSV) e restauração em lote (*bulk import*).
 
 ### 3. 🚗 Agenda Inteligente & Assistente de Rotas
+- **Endereço Base Próprio para Cada Usuário**: cada profissional configura seu próprio ponto de partida (residência ou consultório), permitindo ao Assistente de Rotas traçar trajetos individualizados.
+- **Parâmetros do Veículo Customizáveis**: consumo médio urbano (km/L) e preço da gasolina (R$/L) configurados pelo usuário e salvos na nuvem.
 - **Escala Flexível**: agendamento de sessões avulsas ou geração automática de escalas da semana ou mês com suporte a horários diferentes por dia.
 - **Sincronização com Google Agenda**: integração bidirecional (cria, atualiza e remove compromissos no calendário do celular).
 - **Assistente de Rotas & Combustível**:
-  - Cálculo automático de trajetos e tempos de deslocamento entre pacientes.
+  - Cálculo automático de trajetos e tempos de deslocamento entre pacientes a partir da base do profissional.
   - Regra de deslocamento para atendimentos consecutivos (alerta de viabilidade e sugestão de ajuste de horário).
   - Análise inteligente em caso de cancelamentos (compara se compensa retornar à base ou aguardar no local, calculando tempo livre e custo de gasolina).
   - Simulação de rotas com consumo do veículo (km/L) e preço do combustível configuráveis.
@@ -77,16 +79,18 @@ O FisioFlow foi desenhado para que qualquer fisioterapeuta possa começar a usar
 
 1. **Primeiro Acesso em 1 Clique**:
    - O fisioterapeuta abre o link do app no celular ou computador.
-   - Preenche apenas: **Nome completo**, **CREFITO/CPF** e seu **E-mail do Gmail**.
+   - Preenche: **Nome completo**, **CREFITO/CPF**, **E-mail do Gmail**, **Endereço Base / Consultório** e parâmetros do veículo.
    - Clica em **"🚀 Conectar e Criar Minha Planilha"**.
 2. **Criação e Compartilhamento Automático no Google Drive**:
    - O backend cria instantaneamente uma planilha dedicada exclusiva para esse profissional (`FisioFlow — Dra. [Nome]`).
    - Compartilha a planilha diretamente com o e-mail do Gmail informado como **Editor** — o fisioterapeuta pode abrir o Google Drive dele e ver a planilha em "Compartilhados comigo".
-3. **Google Agenda Integrada**:
+3. **Persistência de Configurações no Google Sheets**:
+   - Todos os dados da aba de Configurações (dados profissionais, endereço do consultório, consumo do carro) são sincronizados em uma aba dedicada `Configuracao` da planilha.
+4. **Google Agenda Integrada**:
    - Os agendamentos criados no FisioFlow convidam e sincronizam diretamente com a Google Agenda do celular do profissional.
-4. **Link Direto nas Configurações**:
+5. **Link Direto nas Configurações**:
    - Em **Configurações ⚙️**, o profissional tem o botão **"📊 Abrir Minha Planilha no Google Drive ↗"** para auditar, imprimir ou exportar seus dados a qualquer momento.
-5. **✨ Modo Demonstração**:
+6. **✨ Modo Demonstração**:
    - Permite testar o app na hora sem internet ou sem cadastro, salvando tudo localmente no aparelho.
 
 ---
@@ -97,7 +101,7 @@ Para você, desenvolvedor/administrador, gerenciar o FisioFlow para centenas de 
 
 * O arquivo [`Code.gs`](Code.gs) possui inteligência **multi-inquilino** (*multi-tenant*):
   - Mantém uma aba central chamada `_Usuarios` com o controle de todos os fisioterapeutas cadastrados, links das planilhas, datas de criação e último acesso.
-  - Cada fisioterapeuta possui uma planilha completamente isolada e privada no Google Drive, garantindo conformidade com a LGPD e privacidade total entre pacientes de diferentes profissionais.
+  - Cada fisioterapeuta possui uma planilha completamente isolada e privada no Google Drive, com abas dedicadas (`Atendimentos`, `Pacientes`, `Evolucoes`, `Exercicios`, `Rotinas`, `Agendamentos` e `Configuracao`).
   - Você só precisa implantar o `Code.gs` **uma única vez** no seu Google Drive como App da Web (`Executar como: Eu`, `Acesso: Qualquer pessoa`).
 
 ---
@@ -124,10 +128,10 @@ node --test test/*.test.js
 
 ```text
 ├── atendimentos.html       # Interface completa do PWA (Single Page Application)
-├── Code.gs                 # Backend Google Apps Script (API REST/RPC da planilha)
+├── Code.gs                 # Backend Google Apps Script (API REST/RPC multi-tenant)
 ├── index.html              # Ponto de entrada e redirecionamento inicial
 ├── manifest.json           # Manifesto PWA com metadados e ícones
-├── sw.js                   # Service Worker para cache e funcionamento offline (v1)
+├── sw.js                   # Service Worker para cache e funcionamento offline (v4)
 ├── package.json            # Configurações do projeto e scripts de teste
 ├── icons/                  # Ícones do aplicativo e QR Code Pix oficial
 ├── test/                   # Testes unitários automatizados
@@ -137,11 +141,24 @@ node --test test/*.test.js
 
 ---
 
-## 🔒 Segurança e Privacidade
+## 🔒 Privacidade Absoluta, Sigilo Profissional e LGPD
 
-- **Zero compartilhamento de dados**: todos os dados de pacientes, registros clínicos e informações financeiras permanecem sob controle exclusivo da conta Google do proprietário da planilha.
-- **Sem rastreamento invasivo**: métricas estritamente agregadas e anônimas locais no dispositivo.
-- **Bloqueio de concorrência**: o backend utiliza `LockService` para garantir integridade dos registros mesmo com múltiplas gravações quase simultâneas.
+O FisioFlow foi desenhado sob o princípio de **Privacy by Design** e em estrita conformidade com a **Lei Geral de Proteção de Dados (Lei nº 13.709/2018)** e o **Código de Ética e Deontologia da Fisioterapia (Resoluções COFFITO/CREFITO)**:
+
+### 1. 🛡️ Garantia de Não-Acesso pelos Desenvolvedores
+- **Os desenvolvedores do FisioFlow NÃO têm acesso, não visualizam, não armazenam cópias e NUNCA acessarão ou comercializarão nenhum dado pessoal ou clínico dos seus pacientes.**
+- Todo prontuário, anotação de evolução, sinal vital (PA/FC), hipótese diagnóstica (CID) e registro financeiro pertence única e exclusivamente ao fisioterapeuta responsável e ao paciente titular.
+
+### 2. 📁 Armazenamento Descentralizado no Google Drive do Usuário
+- Cada profissional possui sua **própria planilha isolada no Google Sheets** (`FisioFlow — Dra. [Nome]`), compartilhada diretamente com seu e-mail do Gmail com permissão de Editor.
+- Não existem servidores ou bancos de dados intermediários sob custódia de terceiros retendo fichas médicas ou dados de saúde.
+
+### 3. ⚙️ Sincronização da Aba `Configuracao` na Planilha
+- Todas as preferências inseridas na aba de **Configurações** (Nome Profissional, Registro CREFITO, Contato, Endereço Base / Consultório, Consumo do Veículo Km/L e Preço da Gasolina) são gravadas automaticamente na aba `Configuracao` da planilha privada do usuário, garantindo portabilidade e sincronização entre múltiplos dispositivos.
+
+### 4. ⚖️ Direitos do Titular (Artigos 17 e 18 da LGPD)
+- **Portabilidade Total**: A qualquer momento, o profissional pode exportar o banco de dados completo em formatos universais (`.json` ou `.csv`) diretamente pela tela de Configurações.
+- **Direito de Revogação e Exclusão**: Como a planilha fica no Google Drive do usuário, ele tem autonomia plena para revogar acessos ou excluir permanentemente a planilha quando desejar.
 
 ---
 
