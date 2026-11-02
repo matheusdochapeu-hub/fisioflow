@@ -1,7 +1,24 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v21` (`sw.js`)
+Versão do Service Worker: `fisioflow-v22` (`sw.js`)
+
+---
+
+## 11. Correção do Modelo de Teste/Exemplo e Destravamento Total do Modal de Férias (`v22`)
+- **Correção Crítica do Modelo de Teste e Carregamento de Pacientes de Exemplo:**
+  - Identificado e removido um `return;` residual indevido no início de `seedDemoDataIfEmpty()`, que bloqueava a geração dos dados de teste e fazia com que clicar no botão *"🌱 Carregar 2 Pacientes de Exemplo"* exibisse o toast verde mas mantivesse a tela com *"0 ativo(s)"* e o estado vazio.
+  - Implementado retorno direto dos dados semeados em `seedDemoDataIfEmpty(force)` e atualização imediata do estado de memória (`patients = demoPts.slice()`) em `carregarPacientesExemploRapido()`.
+  - Adicionado suporte a persistência e sincronização remota dos pacientes e atendimentos de exemplo com a planilha caso o usuário esteja conectado, garantindo que os dados não desapareçam ao atualizar a página.
+  - Reescrito completamente o manipulador local `handleDemoPostAction(payload)` para dar suporte total a todas as ações reais do app (`create_patient`, `update_patient`, `delete_patient`, `create`, `update`, `update_status` para registrar pagamentos, `create_evolution`, `create_schedule`, `create_schedules_batch`, `update_schedule`, `delete_schedule` e `save_config`).
+- **Destravamento Completo e Blindagem do Modal de Férias e Ausências:**
+  - **Eliminação de Travamento por Requisições Síncronas em Série:** Anteriormente, ao registrar ausência com a opção de desmarcar conflitos ativa, o app executava um loop sequencial com `await postAction` para cada agendamento conflitante, deixando o botão em *"Salvando..."* por dezenas de segundos e travando a interface. Agora, a atualização de cancelamento e o bloqueio são aplicados no estado local **instantaneamente (Optimistic UI)**, o modal fecha de imediato, a agenda é atualizada na hora e a sincronização com Google Sheets/Google Agenda é realizada em segundo plano (background worker).
+  - **Blindagem do Intervalo de Datas (`getVacationDatesRange`):** Substituído o cálculo à meia-noite (`T00:00:00`) por cálculo seguro ao meio-dia (`T12:00:00`), eliminando qualquer risco de loops infinitos causados por transições de fuso horário ou horário de verão (DST). Adicionada validação estrita de formato ISO (`YYYY-MM-DD`), proteção contra datas invertidas e limite de segurança de 366 dias para impedir congelamento de aba.
+  - **Higienização de Parâmetros de Data:** Corrigido o envio de strings literais `'null'` ou `'undefined'` para `openVacationModal(preSelectDate)`, garantindo que `initDate` seja sempre uma data ISO válida.
+  - **Tratamento de Exceções Silencioso:** Inserido bloco `try/catch` em `updateVacationConflictAlert()` para que nenhuma anomalia em agendamentos existentes impeça a digitação ou seleção de datas no formulário.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v22` em `sw.js`.
+  - Suíte de testes expandida para 46 testes unitários automatizados passando com 100% de sucesso via `node --test test/*.test.js`, cobrindo geração de dados de teste, ações demo completas e geração segura do intervalo de férias.
 
 ---
 

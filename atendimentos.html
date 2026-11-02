@@ -1919,23 +1919,31 @@ function clearError(){
 /* ============================================================
    MODO DEMONSTRAÇÃO (SEM PLANILHA / OFFLINE LOCAL)
    ============================================================ */
-function seedDemoDataIfEmpty(){
-  return; // Desativado: o aplicativo inicia 100% limpo para uso real
-  var todayIso = new Date().toISOString().substring(0, 10);
+function seedDemoDataIfEmpty(force){
+  if(!force && localStorage.getItem('ff_demo_seeded') === '1'){
+    try{
+      var p = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
+      var e = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
+      var ev = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
+      var s = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
+      if(p.length > 0) return { patients: p, entries: e, evolutions: ev, schedules: s };
+    }catch(err){}
+  }
+  var todayIso = isoDate(new Date());
   var demoPatients = [
     {
       id: 'p_demo_1',
       nome: 'Maria Ferreira dos Santos',
       nomeFantasia: 'Dona Maria',
       oldNome: '',
-      telefone: '(11) 98888-1111',
+      telefone: '(16) 99123-4567',
       contato02: '',
-      endereco: 'Rua das Palmeiras, 120',
-      bairro: 'Jardins',
-      cidade: 'São Paulo',
+      endereco: 'Rua General Osório, 450',
+      bairro: 'Centro',
+      cidade: 'Ribeirão Preto',
       dataNascimento: '1952-05-14',
       documento: '123.456.789-00',
-      valorPadrao: 150,
+      valorPadrao: 120,
       formaPagamento: 'Pix',
       frequenciaSemanal: '2x por semana',
       tcle: 'Sim',
@@ -1952,14 +1960,14 @@ function seedDemoDataIfEmpty(){
       nome: 'João Carlos da Silva',
       nomeFantasia: 'Seu João',
       oldNome: '',
-      telefone: '(11) 97777-2222',
+      telefone: '(16) 99765-4321',
       contato02: '',
-      endereco: 'Av. Paulista, 1500',
-      bairro: 'Bela Vista',
-      cidade: 'São Paulo',
+      endereco: 'Av. Independência, 1200',
+      bairro: 'Jardim Sumaré',
+      cidade: 'Ribeirão Preto',
       dataNascimento: '1960-11-20',
       documento: '987.654.321-99',
-      valorPadrao: 160,
+      valorPadrao: 130,
       formaPagamento: 'Pix',
       frequenciaSemanal: '3x por semana',
       tcle: 'Sim',
@@ -1979,7 +1987,7 @@ function seedDemoDataIfEmpty(){
       nome: 'Dona Maria',
       data: todayIso,
       hora: '09:00',
-      valor: 150,
+      valor: 120,
       status: 'Pendente',
       paymentDate: '',
       lat: '',
@@ -1990,7 +1998,7 @@ function seedDemoDataIfEmpty(){
       nome: 'Seu João',
       data: todayIso,
       hora: '14:30',
-      valor: 160,
+      valor: 130,
       status: 'Recebido',
       paymentDate: todayIso,
       lat: '',
@@ -2021,7 +2029,7 @@ function seedDemoDataIfEmpty(){
       data: todayIso,
       hora: '09:00',
       duracaoMin: 50,
-      valor: 150,
+      valor: 120,
       status: 'Agendado',
       observacao: 'Sessão domiciliar matutina',
       calendarEventId: '',
@@ -2036,7 +2044,7 @@ function seedDemoDataIfEmpty(){
       data: todayIso,
       hora: '14:30',
       duracaoMin: 50,
-      valor: 160,
+      valor: 130,
       status: 'Agendado',
       observacao: 'Foco em fortalecimento de joelho',
       calendarEventId: '',
@@ -2053,15 +2061,16 @@ function seedDemoDataIfEmpty(){
     localStorage.setItem('ff_demo_scheds', JSON.stringify(demoSchedules));
     localStorage.setItem('ff_demo_seeded', '1');
   } catch(e){}
+  return { patients: demoPatients, entries: demoEntries, evolutions: demoEvolutions, schedules: demoSchedules };
 }
 
 function loadDemoData(){
-  seedDemoDataIfEmpty();
+  var demoData = seedDemoDataIfEmpty();
   try {
-    patients = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
-    entries = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
-    evolutions = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
-    schedules = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
+    patients = JSON.parse(localStorage.getItem('ff_demo_patients') || 'null') || (demoData ? demoData.patients : []);
+    entries = JSON.parse(localStorage.getItem('ff_demo_entries') || 'null') || (demoData ? demoData.entries : []);
+    evolutions = JSON.parse(localStorage.getItem('ff_demo_evos') || 'null') || (demoData ? demoData.evolutions : []);
+    schedules = JSON.parse(localStorage.getItem('ff_demo_scheds') || 'null') || (demoData ? demoData.schedules : []);
   } catch(e){
     patients = []; entries = []; evolutions = []; schedules = [];
   }
@@ -2077,50 +2086,135 @@ function loadDemoData(){
 }
 
 function handleDemoPostAction(payload){
-  var act = payload.action;
-  if(act === 'save_patient' || act === 'add_patient'){
-    var idx = patients.findIndex(function(x){ return x.id === payload.id; });
-    if(idx >= 0) patients[idx] = Object.assign({}, patients[idx], payload);
-    else patients.push(payload);
+  if(!payload || typeof payload !== 'object') return { success: true, handled: true };
+  var act = payload.action || '';
+
+  // 1. Pacientes
+  if(act === 'create_patient' || act === 'save_patient' || act === 'add_patient'){
+    var pId = payload.id || ('p_demo_' + Date.now());
+    var pData = Object.assign({}, payload, { id: pId });
+    var pIdx = patients.findIndex(function(x){ return x.id === pId; });
+    if(pIdx >= 0) patients[pIdx] = Object.assign({}, patients[pIdx], pData);
+    else patients.push(pData);
     try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
+    return { success: true, handled: true, id: pId };
   } else if(act === 'update_patient'){
-    var idx = patients.findIndex(function(x){ return x.id === payload.id; });
-    if(idx >= 0){
-      patients[idx] = Object.assign({}, patients[idx], payload);
+    var pIdx = patients.findIndex(function(x){ return x.id === payload.id; });
+    if(pIdx >= 0){
+      patients[pIdx] = Object.assign({}, patients[pIdx], payload);
       try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
     }
+    return { success: true, handled: true, id: payload.id };
+  } else if(act === 'delete_patient'){
+    var pIdx = patients.findIndex(function(x){ return x.id === payload.id; });
+    if(pIdx >= 0) patients.splice(pIdx, 1);
+    try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
+    return { success: true, handled: true };
   } else if(act === 'archive_patient'){
-    var idx = patients.findIndex(function(x){ return x.id === payload.id; });
-    if(idx >= 0){
-      patients[idx].arquivado = payload.arquivado || 'Sim';
+    var pIdx = patients.findIndex(function(x){ return x.id === payload.id; });
+    if(pIdx >= 0){
+      patients[pIdx].arquivado = payload.arquivado || 'Sim';
       try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
     }
-  } else if(act === 'add_entry'){
-    entries.push(payload);
+    return { success: true, handled: true };
+
+  // 2. Atendimentos (Financeiro / Sessões)
+  } else if(act === 'create' || act === 'add_entry' || act === 'save_entry'){
+    var eId = payload.id || ('e_demo_' + Date.now());
+    var eData = Object.assign({}, payload, { id: eId });
+    entries.push(eData);
     try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
-  } else if(act === 'update_entry'){
-    var idx = entries.findIndex(function(x){ return x.id === payload.id; });
-    if(idx >= 0){
-      entries[idx] = Object.assign({}, entries[idx], payload);
+    return { success: true, handled: true, id: eId };
+  } else if(act === 'update' || act === 'update_entry'){
+    var eIdx = entries.findIndex(function(x){ return x.id === payload.id; });
+    if(eIdx >= 0){
+      entries[eIdx] = Object.assign({}, entries[eIdx], payload);
       try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
     }
-  } else if(act === 'delete_entry'){
-    entries = entries.filter(function(x){ return x.id !== payload.id; });
+    return { success: true, handled: true, id: payload.id };
+  } else if(act === 'update_status'){
+    var eIdx = entries.findIndex(function(x){ return x.id === payload.id; });
+    if(eIdx >= 0){
+      entries[eIdx].status = payload.status || 'Recebido';
+      if(payload.paymentDate) entries[eIdx].paymentDate = payload.paymentDate;
+      try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
+    }
+    return { success: true, handled: true };
+  } else if(act === 'delete' || act === 'delete_entry'){
+    var eIdx = entries.findIndex(function(x){ return x.id === payload.id; });
+    if(eIdx >= 0) entries.splice(eIdx, 1);
     try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
-  } else if(act === 'save_evolution'){
-    var idx = evolutions.findIndex(function(x){ return x.id === payload.id; });
-    if(idx >= 0) evolutions[idx] = Object.assign({}, evolutions[idx], payload);
-    else evolutions.push(payload);
+    return { success: true, handled: true };
+
+  // 3. Evoluções
+  } else if(act === 'create_evolution' || act === 'save_evolution'){
+    var evId = payload.id || ('ev_demo_' + Date.now());
+    var evData = Object.assign({}, payload, { id: evId });
+    var evIdx = evolutions.findIndex(function(x){ return x.id === evId; });
+    if(evIdx >= 0) evolutions[evIdx] = Object.assign({}, evolutions[evIdx], evData);
+    else evolutions.push(evData);
     try { localStorage.setItem('ff_demo_evos', JSON.stringify(evolutions)); } catch(e){}
-  } else if(act === 'save_schedule'){
-    var idx = schedules.findIndex(function(x){ return x.id === payload.id; });
-    if(idx >= 0) schedules[idx] = Object.assign({}, schedules[idx], payload);
-    else schedules.push(payload);
+    return { success: true, handled: true, id: evId };
+  } else if(act === 'update_evolution'){
+    var evIdx = evolutions.findIndex(function(x){ return x.id === payload.id; });
+    if(evIdx >= 0){
+      evolutions[evIdx] = Object.assign({}, evolutions[evIdx], payload);
+      try { localStorage.setItem('ff_demo_evos', JSON.stringify(evolutions)); } catch(e){}
+    }
+    return { success: true, handled: true, id: payload.id };
+  } else if(act === 'delete_evolution'){
+    var evIdx = evolutions.findIndex(function(x){ return x.id === payload.id; });
+    if(evIdx >= 0) evolutions.splice(evIdx, 1);
+    try { localStorage.setItem('ff_demo_evos', JSON.stringify(evolutions)); } catch(e){}
+    return { success: true, handled: true };
+
+  // 4. Agendamentos e Férias / Ausências
+  } else if(act === 'create_schedule' || act === 'save_schedule'){
+    var scItem = payload.item || payload;
+    var scId = scItem.id || ('sc_demo_' + Date.now());
+    var scData = Object.assign({}, scItem, { id: scId });
+    var scIdx = schedules.findIndex(function(x){ return x.id === scId; });
+    if(scIdx >= 0) schedules[scIdx] = Object.assign({}, schedules[scIdx], scData);
+    else schedules.push(scData);
     try { localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+    return { success: true, handled: true, id: scId, calendarEventId: 'demo_cal_' + scId };
+  } else if(act === 'create_schedules_batch' || act === 'sync_schedules'){
+    var items = Array.isArray(payload.items) ? payload.items : [];
+    var evMap = {};
+    items.forEach(function(it){
+      var scId = it.id || ('sc_demo_' + Date.now() + '_' + Math.random().toString(36).substr(2,4));
+      it.id = scId;
+      evMap[scId] = 'demo_cal_' + scId;
+      var scIdx = schedules.findIndex(function(x){ return x.id === scId; });
+      if(scIdx >= 0) schedules[scIdx] = Object.assign({}, schedules[scIdx], it);
+      else schedules.push(it);
+    });
+    try { localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+    return { success: true, handled: true, eventMap: evMap, eventIds: evMap };
+  } else if(act === 'update_schedule'){
+    var scItem = payload.item || payload;
+    var scIdx = schedules.findIndex(function(x){ return x.id === scItem.id; });
+    if(scIdx >= 0){
+      schedules[scIdx] = Object.assign({}, schedules[scIdx], scItem);
+      try { localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+    }
+    return { success: true, handled: true, id: scItem.id };
   } else if(act === 'delete_schedule'){
-    schedules = schedules.filter(function(x){ return x.id !== payload.id; });
+    var scIdx = schedules.findIndex(function(x){ return x.id === payload.id; });
+    if(scIdx >= 0) schedules.splice(scIdx, 1);
     try { localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+    return { success: true, handled: true };
+
+  // 5. Configurações
+  } else if(act === 'save_config'){
+    if(payload.config && typeof payload.config === 'object'){
+      if(!config) config = {};
+      Object.assign(config, payload.config);
+      try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch(e){}
+    }
+    return { success: true, handled: true };
   }
+
   return { success: true, handled: true, id: payload.id || 'demo_' + Date.now() };
 }
 
@@ -2136,7 +2230,7 @@ function ativarModoDemonstracao(){
   localStorage.setItem('ff_calendar_id', 'primary');
   config = demoConfig;
 
-  seedDemoDataIfEmpty();
+  seedDemoDataIfEmpty(true);
 
   document.getElementById('setupScreen').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
@@ -2151,21 +2245,18 @@ function ativarModoDemonstracao(){
   showToast('✨ Modo Demonstração ativado! Dados salvos localmente.', 'ok');
 }
 
-function carregarPacientesExemploRapido(){
+async function carregarPacientesExemploRapido(){
   localStorage.removeItem('ff_demo_seeded');
-  seedDemoDataIfEmpty();
-  var demoPts = [], demoEnts = [], demoEvos = [], demoSchs = [];
-  try {
-    demoPts = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
-    demoEnts = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
-    demoEvos = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
-    demoSchs = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
-  } catch(e){}
+  var demoData = seedDemoDataIfEmpty(true);
+  var demoPts = demoData && demoData.patients ? demoData.patients : [];
+  var demoEnts = demoData && demoData.entries ? demoData.entries : [];
+  var demoEvos = demoData && demoData.evolutions ? demoData.evolutions : [];
+  var demoSchs = demoData && demoData.schedules ? demoData.schedules : [];
 
-  patients = demoPts;
-  entries = demoEnts;
-  evolutions = demoEvos;
-  schedules = demoSchs;
+  patients = demoPts.slice();
+  entries = demoEnts.slice();
+  evolutions = demoEvos.slice();
+  schedules = demoSchs.slice();
 
   try {
     localStorage.setItem('ff_demo_patients', JSON.stringify(patients));
@@ -2175,6 +2266,7 @@ function carregarPacientesExemploRapido(){
     localStorage.setItem('ff_has_sample_data', '1');
   } catch(e){}
 
+  saveLocalSchedules();
   reconcileSchedulesWithEntries();
   populatePatientFilter();
   populateEvolutionsFilters();
@@ -2185,6 +2277,25 @@ function carregarPacientesExemploRapido(){
   renderList();
   if(typeof renderFinanceiroTab === 'function') renderFinanceiroTab();
   showToast('🌱 2 Pacientes de exemplo carregados! Explore os prontuários, rotas e recibos.', 'ok');
+
+  if(scriptUrl() !== 'demo'){
+    try {
+      for(var i = 0; i < demoPts.length; i++){
+        await postAction(Object.assign({ action: 'create_patient' }, demoPts[i]));
+      }
+      for(var j = 0; j < demoEnts.length; j++){
+        await postAction(Object.assign({ action: 'create' }, demoEnts[j]));
+      }
+      for(var k = 0; k < demoEvos.length; k++){
+        await postAction(Object.assign({ action: 'create_evolution' }, demoEvos[k]));
+      }
+      if(demoSchs.length > 0){
+        await postAction({ action: 'create_schedules_batch', items: demoSchs });
+      }
+    } catch(errSync){
+      console.warn('Aviso: Pacientes de exemplo carregados localmente. Sincronização remota pendente:', errSync);
+    }
+  }
 }
 
 function limparPacientesExemplo(){
@@ -2202,6 +2313,7 @@ function limparPacientesExemplo(){
     localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules));
   } catch(e){}
 
+  saveLocalSchedules();
   reconcileSchedulesWithEntries();
   populatePatientFilter();
   populateEvolutionsFilters();
@@ -8822,7 +8934,9 @@ async function deleteSchedule(id){
 /* ---------- Gestão de Férias e Ausências de Trabalho ---------- */
 function openVacationModal(preSelectDate){
   var today = isoDate(new Date());
-  var initDate = preSelectDate || agendaSelectedDay || today;
+  var cleanPreSelect = (preSelectDate && preSelectDate !== 'null' && preSelectDate !== 'undefined') ? String(preSelectDate).trim() : '';
+  var initDate = cleanPreSelect || agendaSelectedDay || today;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(initDate)) initDate = today;
 
   var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
     '<div class="modal">' +
@@ -8911,12 +9025,20 @@ function toggleVacHours(){
 }
 
 function getVacationDatesRange(startIso, endIso){
+  if(!startIso || !endIso) return [];
+  var s = String(startIso).trim();
+  var e = String(endIso).trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(e)) return [];
+  if(e < s) return [];
+
   var dates = [];
-  var dStart = new Date(startIso + 'T00:00:00');
-  var dEnd = new Date(endIso + 'T00:00:00');
-  if(isNaN(dStart.getTime()) || isNaN(dEnd.getTime()) || dStart > dEnd) return dates;
+  var dStart = new Date(s + 'T12:00:00');
+  var dEnd = new Date(e + 'T12:00:00');
+  if(isNaN(dStart.getTime()) || isNaN(dEnd.getTime())) return [];
+
   var cur = new Date(dStart.getTime());
-  while(cur <= dEnd){
+  var maxSafety = 366; // Limite de 1 ano para evitar loops infinitos
+  while(cur.getTime() <= dEnd.getTime() && dates.length < maxSafety){
     dates.push(isoDate(cur));
     cur.setDate(cur.getDate() + 1);
   }
@@ -8924,44 +9046,54 @@ function getVacationDatesRange(startIso, endIso){
 }
 
 function updateVacationConflictAlert(){
-  var dtStart = document.getElementById('vacStartDate') ? document.getElementById('vacStartDate').value : '';
-  var dtEnd = document.getElementById('vacEndDate') ? document.getElementById('vacEndDate').value : '';
-  var box = document.getElementById('vacConflictBox');
-  if(!box) return;
+  try{
+    var dtStart = document.getElementById('vacStartDate') ? document.getElementById('vacStartDate').value : '';
+    var dtEnd = document.getElementById('vacEndDate') ? document.getElementById('vacEndDate').value : '';
+    var box = document.getElementById('vacConflictBox');
+    if(!box) return;
 
-  if(!dtStart || !dtEnd || dtEnd < dtStart){
-    box.classList.add('hidden');
-    box.innerHTML = '';
-    return;
+    if(!dtStart || !dtEnd || dtEnd < dtStart){
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+
+    var rangeDates = getVacationDatesRange(dtStart, dtEnd);
+    if(rangeDates.length === 0){
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+
+    var conflictingSchedules = (schedules || []).filter(function(sc){
+      if(!sc || sc.status === 'Cancelado') return false;
+      if(sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio') return false;
+      return rangeDates.indexOf(sc.data) !== -1;
+    });
+
+    if(conflictingSchedules.length === 0){
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+
+    var sample = conflictingSchedules.slice(0, 4).map(function(sc){
+      return formatDateBR(sc.data) + ' ' + (sc.hora || '') + ' - ' + escapeHtml(getSchedulePatientDisplayName(sc));
+    }).join('<br>');
+    if(conflictingSchedules.length > 4){
+      sample += '<br><em>... e mais ' + (conflictingSchedules.length - 4) + ' agendamento(s)</em>';
+    }
+
+    box.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">⚠️ Atenção: Existem ' + conflictingSchedules.length + ' agendamento(s) de pacientes neste período:</div>' +
+      '<div style="font-size:11.5px;line-height:1.4;margin-bottom:8px;padding-left:4px;">' + sample + '</div>' +
+      '<label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-weight:600;color:#7f1d1d;text-transform:none;letter-spacing:0;">' +
+        '<input type="checkbox" id="vacCancelConflictsChk" checked style="width:15px;height:15px;margin-top:2px;accent-color:#dc2626;">' +
+        '<span>Desmarcar / Cancelar agendamentos conflitantes automaticamente</span>' +
+      '</label>';
+    box.classList.remove('hidden');
+  }catch(e){
+    console.warn('Aviso no verificador de conflitos de férias:', e);
   }
-
-  var rangeDates = getVacationDatesRange(dtStart, dtEnd);
-  var conflictingSchedules = schedules.filter(function(sc){
-    if(sc.status === 'Cancelado') return false;
-    if(sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio') return false;
-    return rangeDates.indexOf(sc.data) !== -1;
-  });
-
-  if(conflictingSchedules.length === 0){
-    box.classList.add('hidden');
-    box.innerHTML = '';
-    return;
-  }
-
-  var sample = conflictingSchedules.slice(0, 4).map(function(sc){
-    return formatDateBR(sc.data) + ' ' + (sc.hora || '') + ' - ' + escapeHtml(getSchedulePatientDisplayName(sc));
-  }).join('<br>');
-  if(conflictingSchedules.length > 4){
-    sample += '<br><em>... e mais ' + (conflictingSchedules.length - 4) + ' agendamento(s)</em>';
-  }
-
-  box.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">⚠️ Atenção: Existem ' + conflictingSchedules.length + ' agendamento(s) de pacientes neste período:</div>' +
-    '<div style="font-size:11.5px;line-height:1.4;margin-bottom:8px;padding-left:4px;">' + sample + '</div>' +
-    '<label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-weight:600;color:#7f1d1d;text-transform:none;letter-spacing:0;">' +
-      '<input type="checkbox" id="vacCancelConflictsChk" checked style="width:15px;height:15px;margin-top:2px;accent-color:#dc2626;">' +
-      '<span>Desmarcar / Cancelar agendamentos conflitantes automaticamente</span>' +
-    '</label>';
-  box.classList.remove('hidden');
 }
 
 async function submitVacationBlock(){
@@ -9004,26 +9136,24 @@ async function submitVacationBlock(){
   if(btn){ btn.disabled = true; btn.textContent = 'Salvando...'; }
 
   try{
-    // Cancela agendamentos conflitantes se solicitado
+    var calId = getUserCalendarId();
+    var cancelledSchedulesList = [];
+
+    // 1. Cancela agendamentos conflitantes no estado local imediatamente (Optimistic UI)
     if(cancelConflicts){
       var conflictingSchedules = schedules.filter(function(sc){
         if(sc.status === 'Cancelado') return false;
         if(sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio') return false;
         return rangeDates.indexOf(sc.data) !== -1;
       });
-      for(var i = 0; i < conflictingSchedules.length; i++){
-        var cSc = conflictingSchedules[i];
+      conflictingSchedules.forEach(function(cSc){
         cSc.status = 'Cancelado';
-        try{
-          await postAction({
-            action: 'update_schedule',
-            item: { id: cSc.id, status: 'Cancelado', observacao: (cSc.observacao ? cSc.observacao + ' | ' : '') + 'Cancelado devido a ' + vacType }
-          });
-        } catch(eCancel){}
-      }
+        cSc.observacao = (cSc.observacao ? cSc.observacao + ' | ' : '') + 'Cancelado devido a ' + vacType;
+        cancelledSchedulesList.push(cSc);
+      });
     }
 
-    var calId = getUserCalendarId();
+    // 2. Cria os itens de ausência / bloqueio
     var itemsToCreate = rangeDates.map(function(dIso, idx){
       return {
         id: 'vac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '_' + idx,
@@ -9042,22 +9172,36 @@ async function submitVacationBlock(){
       };
     });
 
-    // Atualiza estado local imediatamente (Local-first / Optimistic UI)
+    // 3. Atualiza estado local imediatamente (Local-first / Optimistic UI instantâneo)
     itemsToCreate.forEach(function(it){
       schedules.push(it);
     });
     saveLocalSchedules();
 
-    // Fecha modal e atualiza a interface instantaneamente
+    // 4. Fecha o modal e atualiza a interface NA HORA (zero travamento!)
     closeModal();
     renderAgendaTab();
     if(typeof currentTab !== 'undefined' && currentTab === 'relatorios') renderReportBody();
 
     showToast('🏖️ ' + (rangeDates.length === 1 ? '1 dia de ausência registrado' : rangeDates.length + ' dias de ausência registrados') + ' com sucesso!', 'ok');
 
-    // Sincroniza em segundo plano na planilha e no Google Agenda
+    // 5. Sincroniza em segundo plano (background) sem travar a interface
     (async function syncVacationInBackground(){
       try{
+        // Envia cancelamentos para a planilha se houver
+        if(cancelledSchedulesList.length > 0){
+          for(var i = 0; i < cancelledSchedulesList.length; i++){
+            var cSc = cancelledSchedulesList[i];
+            try{
+              await postAction({
+                action: 'update_schedule',
+                item: { id: cSc.id, status: 'Cancelado', observacao: cSc.observacao }
+              });
+            }catch(eCanc){}
+          }
+        }
+
+        // Envia criação dos blocos de ausência
         var resp = null;
         if(itemsToCreate.length === 1){
           var singlePayload = Object.assign({

@@ -579,6 +579,137 @@ describe('Dev Mode Isolation & Stealth for Regular Users', () => {
   });
 });
 
+describe('Demo Mode & Sample Data Seeding', () => {
+  let fakeStorage = {};
+  const mockLocalStorage = {
+    getItem: (k) => fakeStorage[k] || null,
+    setItem: (k, v) => { fakeStorage[k] = String(v); },
+    removeItem: (k) => { delete fakeStorage[k]; }
+  };
+
+  const seedDemoDataIfEmpty = extractFnWithScope('seedDemoDataIfEmpty', {
+    localStorage: mockLocalStorage,
+    isoDate: (d) => '2026-11-02'
+  });
+
+  test('seedDemoDataIfEmpty generates and returns 2 sample patients and related clinical data', () => {
+    fakeStorage = {};
+    const res = seedDemoDataIfEmpty(true);
+    assert.ok(res && res.patients && res.patients.length === 2);
+    assert.equal(res.patients[0].nomeFantasia, 'Dona Maria');
+    assert.equal(res.patients[1].nomeFantasia, 'Seu João');
+    assert.equal(res.entries.length, 2);
+    assert.equal(res.evolutions.length, 1);
+    assert.equal(res.schedules.length, 2);
+    assert.equal(mockLocalStorage.getItem('ff_demo_seeded'), '1');
+  });
+
+  test('handleDemoPostAction handles patient, entry, schedule and payment operations', () => {
+    let mockPatients = [];
+    let mockEntries = [];
+    let mockEvos = [];
+    let mockScheds = [];
+
+    const handleDemoPostAction = extractFnWithScope('handleDemoPostAction', {
+      get patients() { return mockPatients; },
+      set patients(v) { mockPatients = v; },
+      get entries() { return mockEntries; },
+      set entries(v) { mockEntries = v; },
+      get evolutions() { return mockEvos; },
+      set evolutions(v) { mockEvos = v; },
+      get schedules() { return mockScheds; },
+      set schedules(v) { mockScheds = v; },
+      localStorage: mockLocalStorage
+    });
+
+    // 1. Create Patient
+    const pRes = handleDemoPostAction({
+      action: 'create_patient',
+      id: 'p_test_1',
+      nome: 'Carlos Drummond',
+      nomeFantasia: 'Carlos'
+    });
+    assert.equal(pRes.success, true);
+    assert.equal(mockPatients.length, 1);
+    assert.equal(mockPatients[0].nomeFantasia, 'Carlos');
+
+    // 2. Create Entry
+    const eRes = handleDemoPostAction({
+      action: 'create',
+      id: 'e_test_1',
+      nome: 'Carlos',
+      valor: 150,
+      status: 'Pendente'
+    });
+    assert.equal(eRes.success, true);
+    assert.equal(mockEntries.length, 1);
+
+    // 3. Update Status (Registrar Pagamento)
+    handleDemoPostAction({
+      action: 'update_status',
+      id: 'e_test_1',
+      status: 'Recebido',
+      paymentDate: '2026-11-02'
+    });
+    assert.equal(mockEntries[0].status, 'Recebido');
+    assert.equal(mockEntries[0].paymentDate, '2026-11-02');
+
+    // 4. Batch Schedules (Férias / Ausências)
+    const vacBatch = handleDemoPostAction({
+      action: 'create_schedules_batch',
+      items: [
+        { id: 'vac_1', data: '2026-11-02', status: 'Ausência' },
+        { id: 'vac_2', data: '2026-11-03', status: 'Ausência' }
+      ]
+    });
+    assert.equal(vacBatch.success, true);
+    assert.equal(mockScheds.length, 2);
+
+    // 5. Update Schedule (Cancelar Conflito)
+    handleDemoPostAction({
+      action: 'update_schedule',
+      item: { id: 'vac_1', status: 'Cancelado' }
+    });
+    assert.equal(mockScheds[0].status, 'Cancelado');
+
+    // 6. Delete Schedule
+    handleDemoPostAction({
+      action: 'delete_schedule',
+      id: 'vac_2'
+    });
+    assert.equal(mockScheds.length, 1);
+  });
+});
+
+describe('Vacation & Absence Manager Helpers', () => {
+  const getVacationDatesRange = extractFnWithScope('getVacationDatesRange', {
+    isoDate: (d) => {
+      const pad = (n) => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+  });
+
+  test('getVacationDatesRange returns continuous list of ISO date strings', () => {
+    const range = getVacationDatesRange('2026-11-02', '2026-11-05');
+    assert.deepEqual(range, ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05']);
+
+    const single = getVacationDatesRange('2026-11-02', '2026-11-02');
+    assert.deepEqual(single, ['2026-11-02']);
+  });
+
+  test('getVacationDatesRange guards against invalid or inverted dates', () => {
+    assert.deepEqual(getVacationDatesRange('2026-11-05', '2026-11-02'), []);
+    assert.deepEqual(getVacationDatesRange('', '2026-11-05'), []);
+    assert.deepEqual(getVacationDatesRange('null', 'null'), []);
+    assert.deepEqual(getVacationDatesRange('invalid-date', '2026-11-05'), []);
+  });
+
+  test('getVacationDatesRange enforces safety cap avoiding browser lockup', () => {
+    const massive = getVacationDatesRange('2026-01-01', '2030-01-01');
+    assert.ok(massive.length <= 366, 'Must cap at maximum 366 days');
+  });
+});
+
 
 
 
