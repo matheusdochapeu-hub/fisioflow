@@ -372,13 +372,34 @@ function pad2_(n) {
 function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
   var dParts = String(dataStr || '').split('-');
   if (dParts.length !== 3) return null;
-  var hParts = String(horaStr || '09:00').split(':');
   var y = parseInt(dParts[0], 10);
   var m = parseInt(dParts[1], 10);
   var d = parseInt(dParts[2], 10);
-  var hh = parseInt(hParts[0] || '9', 10);
-  var mm = parseInt(hParts[1] || '0', 10);
-  if (isNaN(y) || isNaN(m) || isNaN(d) || isNaN(hh) || isNaN(mm)) return null;
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+  var horaClean = String(horaStr || '').trim().toLowerCase();
+  var isAllDay = !horaClean || horaClean.indexOf('dia') !== -1 || horaClean.indexOf('inteiro') !== -1 || horaClean === 'bloqueio';
+
+  var hh = 9;
+  var mm = 0;
+  var dur = parseInt(duracaoMin, 10);
+
+  if (isAllDay) {
+    hh = 8;
+    mm = 0;
+    if (!dur || dur <= 0) dur = 720; // 08:00 às 20:00 (12 horas)
+  } else {
+    var hParts = horaClean.split(':');
+    hh = parseInt(hParts[0] || '9', 10);
+    mm = parseInt(hParts[1] || '0', 10);
+    if (isNaN(hh) || isNaN(mm)) {
+      hh = 8;
+      mm = 0;
+      if (!dur || dur <= 0) dur = 720;
+    } else {
+      if (!dur || dur <= 0) dur = 50;
+    }
+  }
 
   var tz = 'America/Sao_Paulo';
   try {
@@ -399,8 +420,6 @@ function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
   }
   if (!start || isNaN(start.getTime())) return null;
 
-  var dur = parseInt(duracaoMin, 10);
-  if (!dur || dur <= 0) dur = 50;
   var end = new Date(start.getTime() + dur * 60000);
   return { start: start, end: end };
 }
@@ -462,6 +481,40 @@ function enrichScheduleItemWithPatient_(item) {
   return item;
 }
 
+function buildCalendarTitleAndDesc_(item) {
+  var isBlock = item.pacienteId === '__BLOQUEIO__' || item.status === 'Ausência' || item.status === 'Férias' || item.tipo === 'Bloqueio';
+  if (isBlock) {
+    var bTitle = (item.pacienteNome || '🏖️ Férias');
+    if (item.observacao) bTitle += ': ' + item.observacao;
+    var bLines = [
+      '🚫 Bloqueio de Horário / Ausência de Trabalho',
+      'Tipo: ' + (item.pacienteNome || 'Férias / Ausência'),
+      'Motivo: ' + (item.observacao || 'Registrado no App FisioFlow'),
+      'Sincronizado automaticamente pelo FisioFlow.'
+    ];
+    return {
+      title: bTitle,
+      description: bLines.join('\n'),
+      location: '',
+      isBlock: true
+    };
+  }
+
+  var prefix = item.status === 'Realizado' ? '✓ ' : '';
+  var title = prefix + 'Fisioterapia: ' + (item.pacienteDisplay || item.pacienteNome || 'Paciente');
+  var descLines = ['Paciente: ' + (item.pacienteNome || item.pacienteDisplay || '')];
+  if (item.telefone) descLines.push('Telefone: ' + item.telefone);
+  if (item.observacao) descLines.push('Observações: ' + item.observacao);
+  descLines.push('Sincronizado pelo App FisioFlow.');
+
+  return {
+    title: title,
+    description: descLines.join('\n'),
+    location: item.endereco || '',
+    isBlock: false
+  };
+}
+
 function createCalendarEventForSchedule_(item) {
   try {
     enrichScheduleItemWithPatient_(item);
@@ -470,32 +523,29 @@ function createCalendarEventForSchedule_(item) {
     var resolved = resolveUserCalendar_(item.calendarId);
     if (!resolved.cal) return { eventId: '', warning: 'Agenda não encontrada.' };
 
-    var prefix = item.status === 'Realizado' ? '✓ ' : '';
-    var title = prefix + 'Fisioterapia: ' + (item.pacienteDisplay || item.pacienteNome || 'Paciente');
-    var descLines = ['Paciente: ' + (item.pacienteNome || item.pacienteDisplay || '')];
-    if (item.telefone) descLines.push('Telefone: ' + item.telefone);
-    if (item.observacao) descLines.push('Observações: ' + item.observacao);
-    descLines.push('Sincronizado pelo App Fisioterapia.');
+    var calData = buildCalendarTitleAndDesc_(item);
 
     var opts = {
-      location: item.endereco || '',
-      description: descLines.join('\n')
+      location: calData.location,
+      description: calData.description
     };
-    if (resolved.guestEmail) {
+    if (!calData.isBlock && resolved.guestEmail) {
       opts.guests = resolved.guestEmail;
       opts.sendInvites = true;
+    } else {
+      opts.sendInvites = false;
     }
 
     var ev = null;
     try {
-      ev = resolved.cal.createEvent(title, dates.start, dates.end, opts);
+      ev = resolved.cal.createEvent(calData.title, dates.start, dates.end, opts);
     } catch (writeErr) {
       // Fallback caso o usuário tenha compartilhado a agenda apenas como leitura: cria na agenda principal e convida o e-mail dele
       var fallbackEmail = String(item.calendarId || DEFAULT_CALENDAR_ID || '').trim();
-      if (fallbackEmail && fallbackEmail.indexOf('@') > -1) {
+      if (!calData.isBlock && fallbackEmail && fallbackEmail.indexOf('@') > -1) {
         opts.guests = fallbackEmail;
         opts.sendInvites = true;
-        ev = CalendarApp.getDefaultCalendar().createEvent(title, dates.start, dates.end, opts);
+        ev = CalendarApp.getDefaultCalendar().createEvent(calData.title, dates.start, dates.end, opts);
       } else {
         throw writeErr;
       }
@@ -534,17 +584,12 @@ function updateCalendarEventForSchedule_(item) {
       return createCalendarEventForSchedule_(item);
     }
 
-    var prefix = item.status === 'Realizado' ? '✓ ' : '';
-    var title = prefix + 'Fisioterapia: ' + (item.pacienteDisplay || item.pacienteNome || 'Paciente');
-    var descLines = ['Paciente: ' + (item.pacienteNome || item.pacienteDisplay || '')];
-    if (item.telefone) descLines.push('Telefone: ' + item.telefone);
-    if (item.observacao) descLines.push('Observações: ' + item.observacao);
-    descLines.push('Sincronizado pelo App Fisioterapia.');
+    var calData = buildCalendarTitleAndDesc_(item);
 
-    ev.setTitle(title);
+    ev.setTitle(calData.title);
     ev.setTime(dates.start, dates.end);
-    if (item.endereco !== undefined) ev.setLocation(item.endereco || '');
-    ev.setDescription(descLines.join('\n'));
+    if (item.endereco !== undefined) ev.setLocation(calData.location);
+    ev.setDescription(calData.description);
     return { eventId: ev.getId(), warning: '' };
   } catch (err) {
     return { eventId: item.calendarEventId || '', warning: err.message || String(err) };
