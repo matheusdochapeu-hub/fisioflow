@@ -247,6 +247,10 @@ function sheetToObjects_(sheet) {
     for (var j = 0; j < headers.length; j++) {
       obj[headers[j]] = formatCellValue_(headers[j], data[i][j]);
     }
+    // Protege PrecoGasolina caso o Google Sheets tenha formatado como data
+    if (obj['Chave'] === 'PrecoGasolina' && (typeof obj['Valor'] === 'string' && /^\d{4}-\d{2}-\d{2}/.test(obj['Valor']))) {
+      obj['Valor'] = 6.10;
+    }
     rows.push(obj);
   }
   return rows;
@@ -425,37 +429,94 @@ function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
 }
 
 var DEFAULT_CALENDAR_ID = 'primary';
+var _resolvedCalendarCache = {};
 
 function resolveUserCalendar_(calendarId) {
-  var cid = String(calendarId || DEFAULT_CALENDAR_ID || '').trim().toLowerCase();
+  var rawCid = String(calendarId || DEFAULT_CALENDAR_ID || '').trim();
+  var cid = rawCid.toLowerCase();
+  if (_resolvedCalendarCache[cid]) return _resolvedCalendarCache[cid];
+
   var defaultCal = null;
   try { defaultCal = CalendarApp.getDefaultCalendar(); } catch (e) {}
   var effectiveEmail = '';
   try { effectiveEmail = Session.getEffectiveUser().getEmail().toLowerCase(); } catch (e2) {}
 
-  // Se o e-mail informado for o da própria conta do Apps Script executando
-  if (defaultCal && (defaultCal.getId().toLowerCase() === cid || (effectiveEmail && effectiveEmail === cid))) {
-    return { cal: defaultCal, guestEmail: null, calendarId: cid, isOwner: true };
+  // 1. Se a conta que roda o script for a dona direta da agenda solicitada
+  if (defaultCal && (defaultCal.getId().toLowerCase() === cid || (effectiveEmail && effectiveEmail === cid) || cid === 'primary')) {
+    var resDirect = {
+      cal: defaultCal,
+      calendarId: cid || defaultCal.getId(),
+      guestEmail: null,
+      targetGuest: null,
+      isOwner: true,
+      isDirectShared: false,
+      mode: 'direct_native'
+    };
+    _resolvedCalendarCache[cid] = resDirect;
+    return resDirect;
   }
 
+  // 2. Tenta acessar via getCalendarById
   if (cid && cid !== 'primary') {
-    var customCal = null;
-    try {
-      customCal = CalendarApp.getCalendarById(cid);
-    } catch (e3) {}
-    if (customCal) {
-      return { cal: customCal, guestEmail: null, calendarId: cid, isOwner: false };
+    var targetVariants = [rawCid, cid];
+    for (var vIdx = 0; vIdx < targetVariants.length; vIdx++) {
+      var target = targetVariants[vIdx];
+      var customCal = null;
+      try {
+        customCal = CalendarApp.getCalendarById(target);
+      } catch (e3) {}
+      if (customCal) {
+        var resCustom = {
+          cal: customCal,
+          calendarId: target,
+          guestEmail: null,
+          targetGuest: null,
+          isOwner: false,
+          isDirectShared: true,
+          mode: 'direct_shared'
+        };
+        _resolvedCalendarCache[cid] = resCustom;
+        return resCustom;
+      }
     }
-    // Se a agenda pertence a outro Gmail não compartilhado diretamente, adiciona como convidado
-    var isSelf = (effectiveEmail && effectiveEmail === cid) || (defaultCal && defaultCal.getId().toLowerCase() === cid);
-    return {
-      cal: defaultCal,
-      guestEmail: (!isSelf && cid.indexOf('@') > -1) ? cid : null,
-      calendarId: cid,
-      isOwner: isSelf
-    };
+
+    // Busca inteligente em todas as agendas acessíveis pelo usuário executor (CalendarApp.getAllCalendars)
+    try {
+      var allCals = CalendarApp.getAllCalendars() || [];
+      for (var cIdx = 0; cIdx < allCals.length; cIdx++) {
+        var c = allCals[cIdx];
+        if (!c) continue;
+        var cIdLow = String(c.getId() || '').toLowerCase();
+        var cNameLow = String(c.getName() || '').toLowerCase();
+        if (cIdLow === cid || cNameLow === cid) {
+          var resSmart = {
+            cal: c,
+            calendarId: c.getId(),
+            guestEmail: null,
+            targetGuest: null,
+            isOwner: false,
+            isDirectShared: true,
+            mode: 'direct_shared'
+          };
+          _resolvedCalendarCache[cid] = resSmart;
+          return resSmart;
+        }
+      }
+    } catch (eAll) {}
   }
-  return { cal: defaultCal, guestEmail: null, calendarId: 'primary', isOwner: true };
+
+  // 3. Fallback inteligente: Grava na agenda padrão ativa e vincula como convidado SEM DISPARO DE E-MAILS
+  var resFallback = {
+    cal: defaultCal,
+    calendarId: cid || (defaultCal ? defaultCal.getId() : 'primary'),
+    guestEmail: (cid && cid.indexOf('@') > -1 && cid !== 'primary') ? cid : null,
+    targetGuest: (cid && cid.indexOf('@') > -1 && cid !== 'primary') ? cid : null,
+    isOwner: false,
+    isDirectShared: false,
+    mode: 'default_no_invite'
+  };
+  _resolvedCalendarCache[cid] = resFallback;
+  return resFallback;
 }
 
 /** Preenche automaticamente endereço, telefone e NomeFantasia do paciente caso não venham no payload. */
@@ -527,32 +588,31 @@ function createCalendarEventForSchedule_(item) {
 
     var opts = {
       location: calData.location,
-      description: calData.description
+      description: calData.description,
+      sendInvites: false
     };
-    if (!calData.isBlock && resolved.guestEmail) {
-      opts.guests = resolved.guestEmail;
-      opts.sendInvites = true;
-    } else {
-      opts.sendInvites = false;
+    if (resolved.targetGuest && !resolved.isOwner && !resolved.isDirectShared) {
+      opts.guests = resolved.targetGuest;
     }
 
     var ev = null;
     try {
       ev = resolved.cal.createEvent(calData.title, dates.start, dates.end, opts);
     } catch (writeErr) {
-      // Fallback caso o usuário tenha compartilhado a agenda apenas como leitura: cria na agenda principal e convida o e-mail dele
-      var fallbackEmail = String(item.calendarId || DEFAULT_CALENDAR_ID || '').trim();
-      if (!calData.isBlock && fallbackEmail && fallbackEmail.indexOf('@') > -1) {
-        opts.guests = fallbackEmail;
-        opts.sendInvites = true;
-        ev = CalendarApp.getDefaultCalendar().createEvent(calData.title, dates.start, dates.end, opts);
+      // Fallback caso o usuário tenha compartilhado a agenda apenas como leitura: cria na agenda principal
+      var defCal = CalendarApp.getDefaultCalendar();
+      if (defCal && defCal.getId() !== resolved.cal.getId()) {
+        ev = defCal.createEvent(calData.title, dates.start, dates.end, opts);
       } else {
         throw writeErr;
       }
     }
 
-    try { ev.addPopupReminder(30); } catch (remErr) {}
-    return { eventId: ev.getId(), warning: '' };
+    if (ev) {
+      try { ev.addPopupReminder(30); } catch (remErr) {}
+      return { eventId: ev.getId(), warning: '' };
+    }
+    return { eventId: '', warning: 'Não foi possível gerar evento no Google Agenda.' };
   } catch (err) {
     return { eventId: '', warning: err.message || String(err) };
   }
@@ -692,12 +752,21 @@ function doPost(e) {
       result.success = false;
       result.error = 'Não foi possível acessar o Google Agenda. Autorize o CalendarApp no editor do Apps Script executando a função autorizarGoogleAgenda.';
     } else {
+      var effectiveEmail = '';
+      try { effectiveEmail = Session.getEffectiveUser().getEmail(); } catch (eEff) {}
       result.calendarName = resolvedTest.cal.getName();
-      result.mode = resolvedTest.guestEmail ? 'invite' : 'direct';
+      result.mode = resolvedTest.mode;
       result.calendarId = resolvedTest.calendarId;
-      result.message = resolvedTest.guestEmail
-        ? ('Conectado! Os eventos serão criados e enviados com convite direto para ' + resolvedTest.guestEmail)
-        : ('Conectado diretamente à agenda "' + (resolvedTest.cal.getName() || 'Principal') + '" (' + resolvedTest.calendarId + ')');
+      result.effectiveUser = effectiveEmail;
+      result.sendInvites = false;
+
+      if (resolvedTest.mode === 'direct_native') {
+        result.message = 'Conectado nativamente à conta Google (' + (resolvedTest.cal.getName() || resolvedTest.calendarId) + '). Os agendamentos são gravados diretamente na agenda.';
+      } else if (resolvedTest.mode === 'direct_shared') {
+        result.message = 'Conectado diretamente à agenda compartilhada "' + (resolvedTest.cal.getName() || resolvedTest.calendarId) + '" sem envio de convites por e-mail.';
+      } else {
+        result.message = 'Conectado à agenda ativa (' + (resolvedTest.cal.getName() || effectiveEmail) + '). Agendamentos são gravados diretamente sem envio de convites por e-mail.';
+      }
     }
     return ContentService.createTextOutput(JSON.stringify(result))
       .setMimeType(ContentService.MimeType.JSON);
@@ -869,37 +938,48 @@ function doPost(e) {
       result.eventId = evId;
       if (calRes.warning) result.calendarWarning = calRes.warning;
 
-    } else if (body.action === 'create_schedules_batch') {
+    } else if (body.action === 'create_schedules_batch' || body.action === 'sync_schedules') {
       var items = Array.isArray(body.items) ? body.items : [];
+      var sAg = getAgendSheet_();
+      var existingRows = sheetToObjects_(sAg);
+      var existingMap = {};
+      existingRows.forEach(function(r) { if (r.ID) existingMap[String(r.ID)] = true; });
+
       var nowBatch = new Date().toISOString();
       var eventIds = {};
       var syncedCount = 0;
       var warnings = [];
-      var rowsToAdd = items.map(function(it) {
+      var rowsToAdd = [];
+
+      items.forEach(function(it) {
         if (!it.calendarId && body.calendarId) it.calendarId = body.calendarId;
         var cRes = createCalendarEventForSchedule_(it);
         var cId = cRes.eventId || '';
         eventIds[it.id] = cId;
         if (cId) syncedCount++;
         if (cRes.warning && warnings.indexOf(cRes.warning) === -1) warnings.push(cRes.warning);
-        return [
-          it.id,
-          it.pacienteId || '',
-          it.pacienteNome || '',
-          it.data || '',
-          it.hora || '',
-          it.duracaoMin || 50,
-          it.valor !== undefined ? it.valor : '',
-          it.status || 'Agendado',
-          it.observacao || '',
-          cId,
-          it.calendarId || DEFAULT_CALENDAR_ID || 'primary',
-          it.atendimentoId || '',
-          nowBatch
-        ];
+
+        if (existingMap[String(it.id)]) {
+          if (cId) updateFieldById_(sAg, it.id, 'CalendarEventId', cId);
+        } else {
+          rowsToAdd.push([
+            it.id,
+            it.pacienteId || '',
+            it.pacienteNome || '',
+            it.data || '',
+            it.hora || '',
+            it.duracaoMin || 50,
+            it.valor !== undefined ? it.valor : '',
+            it.status || 'Agendado',
+            it.observacao || '',
+            cId,
+            it.calendarId || DEFAULT_CALENDAR_ID || 'primary',
+            it.atendimentoId || '',
+            nowBatch
+          ]);
+        }
       });
       if (rowsToAdd.length > 0) {
-        var sAg = getAgendSheet_();
         sAg.getRange(sAg.getLastRow() + 1, 1, rowsToAdd.length, AGEND_HEADERS.length).setValues(rowsToAdd);
       }
       result.eventIds = eventIds;
