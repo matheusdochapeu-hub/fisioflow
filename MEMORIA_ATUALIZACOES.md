@@ -1,7 +1,38 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v14` (`sw.js`)
+Versão do Service Worker: `fisioflow-v16` (`sw.js`)
+
+---
+
+## 5. Correção do Botão Férias, UX Harmonizada da Agenda e Banner Google Agenda Recolhido (`v16`)
+- **Correção e Salvamento Local-First do Modal de Férias e Ausências (`openVacationModal` / `submitVacationBlock`):**
+  - Modal estruturado estritamente no padrão de modais do app (`.modal-bg` com backdrop blur + `.modal` com `.grabber`), responsivo em dispositivos móveis.
+  - Salvamento otimista imediato (`local-first`) no array `schedules` e no `localStorage`, fechamento instantâneo do modal, renderização atualizada da grade e notificação toast com sucesso.
+  - Sincronização remota executada de forma assíncrona em segundo plano para o Apps Script e Google Calendar, eliminando travamento do botão ou falha na criação local caso a rede oscile.
+- **UX Harmonizada do Calendário com Tamanhos Uniformes:**
+  - Grade do calendário (`renderAgendaCalendar`): todas as células de dias (`.cal-day`) possuem altura padronizada e travada em `46px` (`height: 46px; min-height: 46px; max-height: 46px; box-sizing: border-box;`), com `.cal-day-num` e área de indicadores `.cal-day-dots` de `13px`, mantendo todas as semanas e dias perfeitamente alinhados, sem deformações visuais causadas pela presença ou ausência de badges.
+  - Grid de estatísticas (`.agenda-kpi-grid`): 4 cards de KPI (`Agendados`, `A Realizar`, `Realizados`, `Ausências`) com altura uniforme de `52px`, 25% de largura proporcional cada, valores monoespaçados destacados e suporte a seleção interativa com classe `.active`.
+  - Implementada a função `setAgendaStatusFilter(st)` para alternar o filtro e destacar visualmente o KPI ativo com clique direto.
+  - Barra de ações (`.agenda-actions-row`): 3 botões em grade de proporção idêntica (`[📅 + Agendar]`, `[🏖️ Férias / Ausência]`, `[🚗 Rotas & Distâncias]`), altura padrão de `42px` e bordas alinhadas.
+- **Recolhimento e Redução do Vínculo com Google Agenda:**
+  - Card dominante substituído por container retrátil compacto (`<details id="gcalDetailsWrapper">` + `<summary id="gcalBannerBox">`), ocupando apenas uma barra discreta de ~36px com dot de status, e-mail vinculado e pílula `⚙️ Configurar`.
+  - Conteúdo expandido apenas sob demanda do usuário caso deseje alterar agenda ou exportar calendário `.ICS`.
+- **Cache do Service Worker:**
+  - Atualizado para `fisioflow-v16` em `sw.js`.
+
+---
+
+## 4. Correção do Modal de Férias, UX Uniforme do Calendário e Ocultação do Banner do Google Agenda (`v15`)
+- **Correção Definitiva do Botão "Férias / Ausência" (`openVacationModal`):**
+  - Reestruturado com o padrão de modais do app: `.modal-bg` com backdrop blur + `.modal` com `.grabber`, abrindo com animação slide-up responsiva e fechamento ao tocar no fundo ou botão Cancelar.
+- **UX Uniforme do Calendário e Botões com Tamanhos Similares:**
+  - Células do calendário com altura uniforme de `44px`, eliminando desproporção na primeira semana.
+  - Chips de estatísticas do mês e barra de botões com tamanhos padronizados.
+- **Ocultação e Recolhimento do Vínculo com Google Agenda:**
+  - Banner informativo ocultado automaticamente da tela principal quando a agenda já está vinculada, mantendo o acesso pela tela de Configurações (⚙️).
+- **Cache do Service Worker:**
+  - Atualizado para `fisioflow-v15` em `sw.js`.
 
 ---
 
