@@ -1369,7 +1369,7 @@
    LINK DA PLANILHA & BACKEND CENTRAL (Google Apps Script Multi-Tenant)
    URL central para criação e gestão automática de planilhas para terceiros.
    ============================================================ */
-var DEFAULT_CENTRAL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwGStc4TIkgeIhJhGvlTtVUOd-oamJ77wMgvaiisl8xjUXgXqgqm0bTPl6T0vy8Gqmw4g/exec';
+var DEFAULT_CENTRAL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPVtxIN2llbdL63tSDVKcKOR6MHIkj6Ond_F_t-UYFAPNse63EgrMcnoBtWkVasTSH/exec';
 var SCRIPT_URL = DEFAULT_CENTRAL_SCRIPT_URL;
 
 function getCentralScriptUrl(){
@@ -8712,7 +8712,7 @@ async function init(){
   }
 
   // Atualiza automaticamente o link salvo caso uma nova implantação padrão tenha sido definida
-  if(config && SCRIPT_URL && config.scriptUrl !== SCRIPT_URL){
+  if(config && SCRIPT_URL && config.scriptUrl !== SCRIPT_URL && config.scriptUrl !== 'demo'){
     config.scriptUrl = SCRIPT_URL;
     try{ localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }catch(e){}
   }
