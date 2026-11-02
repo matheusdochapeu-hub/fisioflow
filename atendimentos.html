@@ -101,11 +101,8 @@
   .hidden{display:none !important;}
 
   header.top{
-    display:flex;flex-direction:column;gap:10px;margin-bottom:16px;
-  }
-  .header-main-row{
     display:flex;align-items:center;justify-content:space-between;
-    gap:12px;width:100%;
+    gap:12px;margin-bottom:16px;
   }
   header.top .brand{display:flex;align-items:center;gap:12px;min-width:0;flex:1;}
   .stamp{
@@ -126,9 +123,6 @@
     box-shadow:var(--shadow-soft);transition:transform .08s ease,background .15s ease;
   }
   .icon-btn:active{transform:scale(.93);background:var(--primary-soft);}
-  .header-actions{
-    display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;
-  }
 
   /* 3 Abas Principais */
   .main-tabs{
@@ -1113,24 +1107,16 @@
   <!-- Tela Principal -->
   <div id="mainScreen" class="hidden">
     <header class="top">
-      <div class="header-main-row">
-        <div class="brand">
-          <div class="stamp">FF</div>
-          <div style="min-width:0;">
-            <h1 id="providerNameDisplay">FisioFlow</h1>
-            <div class="sub">Fisioterapia & Prontuários</div>
-          </div>
-        </div>
-        <div class="header-quick-tools">
-          <button id="installBtn" class="icon-btn hidden" onclick="promptInstall()" title="Instalar app" aria-label="Instalar app">&#11015;</button>
-          <button class="icon-btn" onclick="openSettings()" title="Configurações" aria-label="Configurações">&#9881;</button>
+      <div class="brand">
+        <div class="stamp">FF</div>
+        <div style="min-width:0;">
+          <h1 id="providerNameDisplay">FisioFlow</h1>
+          <div class="sub">Fisioterapia & Prontuários</div>
         </div>
       </div>
-      <div class="header-actions">
-        <button id="btnHeaderPix" class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
-        <button id="btnHeaderFeedback" class="btn-header-feedback" type="button" onclick="openFeedbackModal()" title="Fale com o desenvolvedor">💬 Suporte</button>
-        <button id="btnHeaderLgpd" class="btn-header-lgpd" type="button" onclick="openLgpdModal()" title="Privacidade e Termos LGPD">🔒 LGPD</button>
-        <button id="btnDevPanel" class="btn-dev-secret" type="button" onclick="openDevModal()">🔐 Área Dev</button>
+      <div class="header-quick-tools">
+        <button id="installBtn" class="icon-btn hidden" onclick="promptInstall()" title="Instalar app" aria-label="Instalar app">&#11015;</button>
+        <button class="icon-btn" onclick="openSettings()" title="Configurações" aria-label="Configurações">&#9881;</button>
       </div>
     </header>
 
@@ -1385,6 +1371,7 @@
         <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
         <button class="btn-header-feedback" type="button" onclick="openFeedbackModal()">💬 Fale com o desenvolvedor</button>
         <button class="btn-header-lgpd" type="button" onclick="openLgpdModal()">🔒 Termos &amp; LGPD</button>
+        <button id="btnDevPanel" class="btn-dev-secret" type="button" onclick="openDevModal()">🔐 Área Dev</button>
       </div>
       <div style="font-weight:600;color:var(--ink);">FisioFlow · Aplicativo gratuito de gestão para fisioterapia</div>
       <div style="margin-top:6px;">
