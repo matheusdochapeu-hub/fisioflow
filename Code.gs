@@ -716,10 +716,29 @@ function deleteCalendarEventForSchedule_(eventId, calendarId) {
   } catch (err) {}
 }
 
+var NON_PATIENT_NAMES_ = ['agachamento', 'flexao', 'prancha', 'exercicio', 'rotina', 'alongamento', '__bloqueio__', 'bloqueio', 'ausencia', 'ferias'];
+
+function isInvalidPatientName_(name) {
+  if (!name) return true;
+  var n = String(name).trim().toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (!n) return true;
+  for (var i = 0; i < NON_PATIENT_NAMES_.length; i++) {
+    if (n === NON_PATIENT_NAMES_[i] || n.indexOf(NON_PATIENT_NAMES_[i]) === 0) return true;
+  }
+  return false;
+}
+
 function doGet(e) {
   var usuarioId = (e && e.parameter && e.parameter.usuarioId) || '';
   var targetSs = resolveSpreadsheet_(usuarioId, (e && e.parameter) || {});
   _currentSS_ = targetSs;
+
+  var rawPac = sheetToObjects_(getPacSheet_());
+  var cleanPac = rawPac.filter(function(p){
+    return !isInvalidPatientName_(p.Nome) && !isInvalidPatientName_(p.NomeFantasia);
+  });
 
   var result = {
     success: true,
@@ -727,7 +746,7 @@ function doGet(e) {
     spreadsheetUrl: targetSs ? targetSs.getUrl() : '',
     configuracao: getConfigObject_(),
     atendimentos: sheetToObjects_(getAtendSheet_()),
-    pacientes: sheetToObjects_(getPacSheet_()),
+    pacientes: cleanPac,
     evolucoes: sheetToObjects_(getEvoSheet_()),
     exercicios: sheetToObjects_(getExeSheet_()),
     rotinas: sheetToObjects_(getRotSheet_()),
@@ -886,6 +905,11 @@ function doPost(e) {
 
     /* ---------- Pacientes ---------- */
     } else if (body.action === 'create_patient') {
+      if (isInvalidPatientName_(body.nome) || isInvalidPatientName_(body.nomeFantasia)) {
+        result.success = false;
+        result.error = 'Nome de paciente inválido: não é permitido cadastrar exercícios como pacientes.';
+        return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+      }
       getPacSheet_().appendRow([
         body.id,
         body.nome,
@@ -912,6 +936,11 @@ function doPost(e) {
       ]);
 
     } else if (body.action === 'update_patient') {
+      if (body.nome !== undefined && isInvalidPatientName_(body.nome)) {
+        result.success = false;
+        result.error = 'Nome de paciente inválido.';
+        return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+      }
       var pacSheet = getPacSheet_();
       var existingPac = getRowObjectById_(pacSheet, body.id) || {};
       var oldNomeRef = body.oldNome || existingPac.Nome || '';

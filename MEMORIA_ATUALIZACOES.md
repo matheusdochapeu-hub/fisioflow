@@ -1,7 +1,32 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v20` (`sw.js`)
+Versão do Service Worker: `fisioflow-v21` (`sw.js`)
+
+---
+
+## 10. Harmonização Visual da Agenda, Calendário Perfeito, Ocultação de Vínculo e Sanitização Rigorosa de Pacientes (`v21`)
+- **Harmonização e Uniformidade de Tamanhos na Agenda (UX Perfeita):**
+  - **Grade de Ações 2x2 com Tamanhos Idênticos:** Transformada a barra de ações em uma grade equilibrada de 2x2 (`.agenda-actions-row` com `grid-template-columns: repeat(2, 1fr)`), contendo 4 botões de dimensões rigorosamente padronizadas (`height: 42px; min-height: 42px; max-height: 42px; width: 100%`):
+    1. `[📅 + Agendar]` (Primário destacado)
+    2. `[🏖️ Férias / Ausência]` (Tom suave âmbar com destaque)
+    3. `[🚗 Rotas & Distâncias]` (Secundário/ghost)
+    4. `[⚙️ Google Agenda]` (Com badge dinâmico de status `✓` verde quando vinculado ou `⚠️` quando não vinculado)
+  - **Cards de Estatísticas (KPIs) Otimizados:** 4 cards padronizados (`Agendados`, `A Realizar`, `Realizados`, `Ausências`) com labels concisos que eliminam truncamento (`...`) e quebras desiguais em qualquer tamanho de tela mobile.
+  - **Calendário com Células e Semanas Perfeitas (`grid-auto-rows: 44px`):** Adicionado `grid-auto-rows: 44px;` ao `.cal-grid` e padronizadas todas as células `.cal-day` e `.cal-day.empty` para `height: 44px; min-height: 44px; max-height: 44px; box-sizing: border-box; overflow: hidden;`. O primeiro dia do mês e os dias vazios anteriores não distorcem mais nem esticam a primeira semana, garantindo alinhamento milimétrico em todas as linhas.
+- **Ocultação e Recolhimento Completo do Banner Google Agenda:**
+  - Quando a agenda do Google está vinculada (`calId`), o banner volumoso do topo é totalmente ocultado da interface principal, mantendo a tela limpa e focada no calendário de atendimentos.
+  - O acesso e status de sincronização são mantidos de forma elegante através do botão `⚙️ Google Agenda` da grade de ações.
+- **Eliminação de Exercícios na Lista de Pacientes (Agachamento, Flexão, Prancha):**
+  - Aperfeiçoada a função `normName` para remover acentos diacríticos (`normalize('NFD')`), garantindo que variações acentuadas como "Flexão" correspondam com precisão.
+  - Expandida a lista de proteção `NON_PATIENT_NAMES` (`agachamento`, `flexao`, `prancha`, `exercicio`, `rotina`, `alongamento`, `__bloqueio__`, etc.).
+  - Aplicada a verificação `isInvalidPatientName` na iteração `patients.forEach` dos relatórios financeiros (`renderFinancialReports`), impedindo que nomes de exercícios apareçam no ranking com 0 sessões e R$ 0,00.
+  - Adicionada a função `isInvalidPatientName_` no backend `Code.gs` para filtrar pacientes em `doGet` e bloquear tentativas de inserção ou atualização indevida em `create_patient` e `update_patient`.
+- **Concordância Gramatical no Filtro de Pacientes:**
+  - Substituída a opção `<option value="">Todas as pacientes</option>` por `<option value="">Todos os pacientes</option>`, mantendo coerência com pacientes do gênero masculino e padrão geral da interface.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v21` em `sw.js`.
+  - 37 testes unitários automatizados passando com 100% de sucesso.
 
 ---
 
