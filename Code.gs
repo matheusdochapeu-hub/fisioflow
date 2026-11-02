@@ -845,6 +845,9 @@ function doPost(e) {
 
     /* ---------- Agendamentos & Google Agenda (CalendarApp) ---------- */
     } else if (body.action === 'create_schedule') {
+      if (body.item && typeof body.item === 'object') {
+        Object.assign(body, body.item);
+      }
       var calRes = createCalendarEventForSchedule_(body);
       var evId = calRes.eventId || '';
       getAgendSheet_().appendRow([
@@ -863,6 +866,7 @@ function doPost(e) {
         new Date().toISOString()
       ]);
       result.calendarEventId = evId;
+      result.eventId = evId;
       if (calRes.warning) result.calendarWarning = calRes.warning;
 
     } else if (body.action === 'create_schedules_batch') {

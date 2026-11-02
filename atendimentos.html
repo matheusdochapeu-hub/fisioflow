@@ -4596,6 +4596,7 @@ function shiftMonth(delta){
 }
 
 function renderList(){
+  reconcileSchedulesWithEntries();
   var list = entriesForMonth();
   var schedList = pendingSchedulesForMonth();
   var container = document.getElementById('entryList');
@@ -4918,8 +4919,15 @@ async function submitNewEntry(returnContext){
 
   entries.unshift(newEntry);
 
-  // Se havia agendamento vinculado (ou do mesmo dia selecionado), marca como Realizado
+  // Se havia agendamento selecionado ou agendado no mesmo dia para o paciente, vincula e marca como Realizado
   var linkedSc = linkedSchedId ? schedules.find(function(x){ return x.id === linkedSchedId; }) : null;
+  if(!linkedSc){
+    linkedSc = schedules.find(function(sc){
+      return sc.data === data && sc.status !== 'Cancelado' && !sc.atendimentoId &&
+             (pObj ? (sc.pacienteId === pObj.id || entryMatchesPatient({ nome: sc.pacienteNome }, pObj))
+                   : (String(sc.pacienteNome || '').trim().toLowerCase() === String(nome || '').trim().toLowerCase()));
+    });
+  }
   if(linkedSc){
     linkedSc.status = 'Realizado';
     linkedSc.atendimentoId = id;
@@ -6322,6 +6330,14 @@ function getHomeAddress(){
   return DEFAULT_HOME_ADDRESS;
 }
 
+function getHomeAddressDisplayName(){
+  var addr = getHomeAddress();
+  if(!addr) return 'Base';
+  var parts = addr.split(/[-–,]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if(parts.length >= 2) return parts[1];
+  return parts[0] || 'Base';
+}
+
 function getCarKmPerLiter(){
   var val = 0;
   if(config && config.carKmPerLiter) val = parseFloat(config.carKmPerLiter);
@@ -6792,7 +6808,7 @@ function renderDepartureFromHomeCard(firstSc, routePairsToLoad){
   return '<div class="route-connector" style="margin-bottom:6px;background:var(--surface);">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
       '<div>' +
-        '🏠 <strong>Saída de Casa (Vila Tibério) &rarr; ' + escapeHtml(dispName) + ':</strong> ' +
+        '🏠 <strong>Saída da Base (' + escapeHtml(getHomeAddressDisplayName()) + ') &rarr; ' + escapeHtml(dispName) + ':</strong> ' +
         '<span style="color:var(--primary-deep);font-weight:700;">' + leg.durationMin + ' min de carro</span> (' + fuel.km + ' km · ' + fuel.liters.toFixed(2) + ' L · ' + formatMoney(fuel.cost) + ')' +
         '<div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">🕒 Saia de casa até <strong>' + minToTimeStr(leaveHomeMin) + '</strong> para o atendimento das ' + escapeHtml(firstSc.hora || '') + '</div>' +
       '</div>' +
@@ -6933,8 +6949,8 @@ function renderTransitionCardBetweenSchedules(prevSc, nextSc, canceledBetween, r
     '<div style="font-size:11.5px;color:var(--ink);margin-top:2px;">' +
       'Intervalo de <strong>' + formatDurationFriendly(gapMin) + '</strong> (' + minToTimeStr(prevEndMin) + ' às ' + escapeHtml(nextSc.hora) + '). ' +
       (freeAtHomeMin <= 0
-        ? ('O trajeto de ida e volta até a Vila Tibério levaria <strong>' + driveHomeTotalMin + ' min</strong> (' + distHomeTotalKm + ' km), sem tempo livre em casa.')
-        : ('Ir até a Vila Tibério consumiria <strong>' + driveHomeTotalMin + ' min de trânsito (' + distHomeTotalKm + ' km)</strong> para ficar apenas <strong>' + formatDurationFriendly(freeAtHomeMin) + ' em casa</strong>.')) +
+        ? ('O trajeto de ida e volta até a base (' + escapeHtml(getHomeAddressDisplayName()) + ') levaria <strong>' + driveHomeTotalMin + ' min</strong> (' + distHomeTotalKm + ' km), sem tempo livre em casa.')
+        : ('Ir até a base (' + escapeHtml(getHomeAddressDisplayName()) + ') consumiria <strong>' + driveHomeTotalMin + ' min de trânsito (' + distHomeTotalKm + ' km)</strong> para ficar apenas <strong>' + formatDurationFriendly(freeAtHomeMin) + ' em casa</strong>.')) +
       ' Indo direto para a região de ' + escapeHtml(nextDisp) + ' você economiza <strong>' + extraKm + ' km (' + formatMoney(extraCost) + ' de gasolina)</strong>.' +
     '</div>';
   }
@@ -6944,7 +6960,7 @@ function renderTransitionCardBetweenSchedules(prevSc, nextSc, canceledBetween, r
     headlineHtml +
     '<div class="route-opt-grid">' +
       '<div class="route-opt-box ' + (recommendHome ? 'recommended' : '') + '">' +
-        '<div style="font-weight:700;color:var(--ink);margin-bottom:3px;">🏠 Opção 1: Ir em Casa (Vila Tibério) ' + (recommendHome ? '<span class="badge pago" style="font-size:9.5px;padding:1px 6px;">Melhor opção</span>' : '') + '</div>' +
+        '<div style="font-weight:700;color:var(--ink);margin-bottom:3px;">🏠 Opção 1: Ir para a Base (' + escapeHtml(getHomeAddressDisplayName()) + ') ' + (recommendHome ? '<span class="badge pago" style="font-size:9.5px;padding:1px 6px;">Melhor opção</span>' : '') + '</div>' +
         '<div>• Tempo livre em casa: <strong>' + (freeAtHomeMin > 0 ? formatDurationFriendly(freeAtHomeMin) : 'Inviável (0 min)') + '</strong></div>' +
         '<div>• Trânsito total (Ida + Volta): <strong>' + driveHomeTotalMin + ' min</strong> (' + distHomeTotalKm + ' km)</div>' +
         '<div>• Gasolina (' + fuelHome.kml + ' km/L): <strong>' + fuelHome.liters.toFixed(2) + ' L (' + formatMoney(fuelHome.cost) + ')</strong></div>' +
@@ -7091,6 +7107,7 @@ function getSchedulePatientObj(sc){
 }
 
 function renderAgendaTab(){
+  reconcileSchedulesWithEntries();
   updateGCalBannerUI();
   populateAgendaFilters();
 
@@ -7666,7 +7683,7 @@ function updateScheduleModalRouteAnalysis(){
           adjacentHtml += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;">' +
             '📅 <strong>' + formatDateBR(dIso) + '</strong> (após <strong>' + escapeHtml(prevName) + '</strong> às ' + escapeHtml(prevSc.hora) + ' — intervalo de ' + formatDurationHuman(gapFromPrev) + '):<br>' +
             (freeAtHome >= 30
-              ? '<span style="color:var(--ok);font-weight:700;">🏠 Recomendado ir em casa:</span> ' + formatDurationHuman(freeAtHome) + ' livres na Vila Tibério (deslocamento total ' + driveHomeTotal + ' min).'
+              ? '<span style="color:var(--ok);font-weight:700;">🏠 Recomendado ir para a base:</span> ' + formatDurationHuman(freeAtHome) + ' livres na base (' + escapeHtml(getHomeAddressDisplayName()) + ') (deslocamento total ' + driveHomeTotal + ' min).'
               : '<span style="color:var(--warn);font-weight:700;">☕ Recomendado aguardar na rua:</span> Ir direto leva só ' + driveMin + ' min (' + formatDistanceKm(rPrev.distanceKm) + ').'
             ) +
           '</div>';
@@ -7701,7 +7718,7 @@ function updateScheduleModalRouteAnalysis(){
 
   box.innerHTML = '<div class="route-connector ok" style="margin:4px 0;">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
-      '<span>🚗 <strong>De Casa (Vila Tibério) → ' + escapeHtml(getPatientDisplayName(p)) + ':</strong> ~<strong>' + rHome.durationMin + ' min</strong> (' + formatDistanceKm(rHome.distanceKm) + ')</span>' +
+      '<span>🚗 <strong>Da Base (' + escapeHtml(getHomeAddressDisplayName()) + ') → ' + escapeHtml(getPatientDisplayName(p)) + ':</strong> ~<strong>' + rHome.durationMin + ' min</strong> (' + formatDistanceKm(rHome.distanceKm) + ')</span>' +
       '<span style="font-size:11px;color:var(--ink-soft);">⛽ ' + fuelHome.liters.toFixed(2).replace('.', ',') + ' L (' + formatMoney(fuelHome.cost) + ' ida)</span>' +
     '</div>' +
     adjacentHtml +
@@ -9369,22 +9386,17 @@ function promptInstall(){
 async function init(){
   try{
     config = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null');
-    if (!config) {
-      // Migração segura para FisioFlow: herda 'config' legado APENAS se NÃO for da Scarlet
-      var legacyRaw = localStorage.getItem('config');
-      if (legacyRaw) {
-        var leg = JSON.parse(legacyRaw);
-        var isScarlet = (leg.calendarId && leg.calendarId.toLowerCase().indexOf('scarlet') > -1) ||
-                        (leg.scriptUrl && leg.scriptUrl.indexOf('AKfycbwYFDh0') > -1);
-        if (!isScarlet && leg.providerName) {
-          config = leg;
+    // Sanitização estrita: purga qualquer resíduo legado do app da Scarlet
+    try{
+      var savedHome = String(localStorage.getItem('ff_home_address') || '');
+      if(/tiberio|tibério|maracaju/i.test(savedHome)){
+        localStorage.removeItem('ff_home_address');
+        if(config && config.homeAddress && /tiberio|tibério|maracaju/i.test(config.homeAddress)){
+          config.homeAddress = '';
           localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-          if (leg.usuarioId) localStorage.setItem('ff_usuario_id', leg.usuarioId);
-          if (leg.calendarId) localStorage.setItem('ff_calendar_id', leg.calendarId);
-          if (leg.homeAddress) localStorage.setItem('ff_home_address', leg.homeAddress);
         }
       }
-    }
+    }catch(e){}
   }catch(e){
     config = null;
   }
