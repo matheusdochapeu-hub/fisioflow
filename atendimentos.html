@@ -1152,7 +1152,7 @@
   <div id="mainScreen" class="hidden">
     <header class="top">
       <div class="brand">
-        <div class="stamp">FF</div>
+        <div class="stamp" onclick="handleDevSecretTap()" style="cursor:pointer;" title="FisioFlow">FF</div>
         <div style="min-width:0;">
           <h1 id="providerNameDisplay">FisioFlow</h1>
           <div class="sub">Fisioterapia & Prontuários</div>
@@ -1433,7 +1433,7 @@
       </div>
     </div>
 
-    <!-- Rodapé FisioFlow: Café, Feedback e Área Dev -->
+    <!-- Rodapé FisioFlow: Café, Feedback e Apoio -->
     <footer style="margin: 40px 0 28px; text-align: center; color: var(--ink-soft); font-size: 12px; border-top: 1px solid var(--line); padding-top: 20px;">
       <div style="display:flex; justify-content:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
         <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
@@ -1442,9 +1442,6 @@
         <button id="btnDevPanel" class="btn-dev-secret" type="button" onclick="openDevModal()">🔐 Área Dev</button>
       </div>
       <div style="font-weight:600;color:var(--ink);">FisioFlow · Aplicativo gratuito de gestão para fisioterapia</div>
-      <div style="margin-top:6px;">
-        <a href="javascript:void(0)" onclick="promptDevAccess()" style="color:var(--ink-soft);opacity:0.65;font-size:11px;text-decoration:none;">🔐 Área Dev &amp; Contador de Acessos</a>
-      </div>
     </footer>
 
   </div>
@@ -10020,17 +10017,23 @@ function verificarModoDev(){
     }
   } else if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
     autorizado = true;
-  } else if (config && config.calendarId && DEV_AUTHORIZED_EMAILS.indexOf(config.calendarId.toLowerCase()) > -1) {
-    autorizado = true;
-    try { sessionStorage.setItem(DEV_SESSION_KEY, '1'); } catch(e){}
-  } else if (getUserCalendarId() && DEV_AUTHORIZED_EMAILS.indexOf(getUserCalendarId().toLowerCase()) > -1) {
-    autorizado = true;
-    try { sessionStorage.setItem(DEV_SESSION_KEY, '1'); } catch(e){}
   }
 
   atualizarDevButtonBadge();
   if (autorizado && devParam) {
     openDevModal();
+  }
+}
+
+var _devTapCount = 0;
+var _devTapTimer = null;
+function handleDevSecretTap(){
+  _devTapCount++;
+  if(_devTapTimer) clearTimeout(_devTapTimer);
+  _devTapTimer = setTimeout(function(){ _devTapCount = 0; }, 2500);
+  if(_devTapCount >= 5){
+    _devTapCount = 0;
+    promptDevAccess();
   }
 }
 

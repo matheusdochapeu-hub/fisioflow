@@ -1,7 +1,23 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v17` (`sw.js`)
+Versão do Service Worker: `fisioflow-v18` (`sw.js`)
+
+---
+
+## 7. Ocultação Total e Sigilo do Modo Desenvolvedor para Usuários Comuns (`v18`)
+- **Remoção de Links Visíveis do Modo Dev:**
+  - Removido o link `🔐 Área do Desenvolvedor (Acesso administrativo)` da tela de cadastro/setup inicial (`#setupScreen`). Usuários novatos agora veem apenas a interface limpa e as informações de boas-vindas e LGPD.
+  - Removido o link `🔐 Área Dev & Contador de Acessos` do rodapé da tela principal (`footer`). Usuários comuns não têm nenhuma referência visual ou texto sobre a área de desenvolvimento.
+- **Isolamento e Sigilo Estrito da Área Dev:**
+  - O painel do desenvolvedor NÃO é ativado automaticamente pelo simples preenchimento de e-mail no aplicativo.
+  - O botão `#btnDevPanel` permanece com `display: none !important;` e só ganha visibilidade se o desenvolvedor se autenticar ativamente na sessão (`sessionStorage.setItem('fisioflow_dev_autenticado', '1')`).
+- **Formas Exclusivas de Acesso para o Desenvolvedor:**
+  - **1. Link Secreto via URL:** Parâmetro `?dev=admin` ou `?dev=fisioflow2026` (ex.: `https://.../atendimentos.html?dev=admin`). O parâmetro é limpo da URL automaticamente após o desbloqueio para não ficar no histórico do navegador.
+  - **2. Easter Egg Discreto no Selo "FF":** Tocar 5 vezes seguidas no selo "FF" (`.stamp`) no topo abre o modal protegido solicitando a senha de administrador. Usuários que tocam normalmente não ativam nada.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v18` em `sw.js`.
+  - Adicionada suíte de testes unitários `Dev Mode Isolation & Stealth for Regular Users`, totalizando 36 testes passando com 100% de sucesso.
 
 ---
 

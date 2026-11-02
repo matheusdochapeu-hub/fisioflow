@@ -434,6 +434,66 @@ describe('Route Engine, Haversine Estimation and Coordinates Matching', () => {
   });
 });
 
+describe('Dev Mode Isolation & Stealth for Regular Users', () => {
+  test('atendimentos.html does not expose visible dev links in setupScreen or footer', () => {
+    // Assert no plain <a> tags or visible links point to promptDevAccess
+    assert.equal(html.includes('Área do Desenvolvedor (Acesso administrativo)'), false);
+    assert.equal(html.includes('Área Dev &amp; Contador de Acessos'), false);
+    assert.equal(html.includes('Área Dev & Contador de Acessos'), false);
+  });
+
+  test('verificarModoDev leaves dev panel button hidden for regular users without ?dev param', () => {
+    const mockBtn = {
+      classList: {
+        _classes: new Set(['btn-dev-secret']),
+        add(c) { this._classes.add(c); },
+        remove(c) { this._classes.delete(c); },
+        contains(c) { return this._classes.has(c); }
+      },
+      innerHTML: ''
+    };
+
+    const mockStorage = {
+      getItem() { return null; },
+      setItem() {}
+    };
+
+    const mockSession = {
+      getItem() { return null; },
+      setItem() {},
+      removeItem() {}
+    };
+
+    const DEV_AUTHORIZED_PASSWORDS = ['admin', 'matheus', 'fisioflow2026', '123456', 'matheus2026'];
+    const DEV_SESSION_KEY = 'fisioflow_dev_autenticado';
+    const LOCAL_VIEWS_KEY = 'fisioflow_dev_local_views_v1';
+
+    const atualizarDevButtonBadge = extractFnWithScope('atualizarDevButtonBadge', {
+      document: { getElementById(id) { return id === 'btnDevPanel' ? mockBtn : null; } },
+      localStorage: mockStorage,
+      sessionStorage: mockSession,
+      DEV_SESSION_KEY,
+      LOCAL_VIEWS_KEY
+    });
+
+    const openDevModal = () => {};
+
+    const verificarModoDevFn = extractFnWithScope('verificarModoDev', {
+      window: { location: { search: '', href: 'https://site.com/atendimentos.html' } },
+      document: { title: 'FisioFlow' },
+      sessionStorage: mockSession,
+      DEV_AUTHORIZED_PASSWORDS,
+      DEV_SESSION_KEY,
+      atualizarDevButtonBadge,
+      openDevModal
+    });
+
+    verificarModoDevFn();
+    assert.equal(mockBtn.classList.contains('visivel'), false);
+  });
+});
+
+
 
 
 
