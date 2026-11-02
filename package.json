@@ -1,0 +1,16 @@
+{
+  "name": "fisioflow",
+  "version": "1.0.0",
+  "private": false,
+  "description": "FisioFlow — Aplicativo PWA para gestão de atendimentos, prontuários CREFITO e controle financeiro de fisioterapia.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "gerar-icones": "node scripts/gerar-icones.js",
+    "sync-github": "node scripts/sync-github.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "FisioFlow",
+  "license": "MIT"
+}
