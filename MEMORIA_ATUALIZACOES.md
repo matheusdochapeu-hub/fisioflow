@@ -1,7 +1,23 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v18` (`sw.js`)
+Versão do Service Worker: `fisioflow-v19` (`sw.js`)
+
+---
+
+## 8. Modo Desenvolvedor Estritamente Acessível por Link Específico (`v19`)
+- **Acesso Exclusivo por Link Específico:**
+  - O modo desenvolvedor e o painel de métricas/contador de acessos agora são acionados **exclusivamente** via link com parâmetro de autenticação autorizado (`?dev=admin`, `?dev=fisioflow2026`, etc.).
+  - Ao carregar a URL específica, o painel administrativo abre imediatamente na tela e a URL é higienizada automaticamente via `history.replaceState` (removendo `?dev=` do endereço para não ficar salvo no histórico do navegador).
+  - Ao fechar o modal, o app retorna 100% ao modo de uso regular.
+- **Inexistência de Elementos Dev na Interface do Usuário:**
+  - Removido completamente o botão `#btnDevPanel` do rodapé do app.
+  - Removidos quaisquer cliques ou gestos secretos de toque furtivo do selo "FF" (`.stamp`), tornando-o um elemento visual puramente estático.
+  - Removido qualquer modal de digitação de senha na tela normal.
+  - O usuário comum não possui nenhum elemento, botão, link ou atalho interativo no DOM para visualizar ou acionar a área do desenvolvedor.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v19` em `sw.js`.
+  - 36 testes unitários automatizados passando com 100% de sucesso, garantindo a ausência total de elementos dev no HTML e a restrição estrita de ativação via link.
 
 ---
 

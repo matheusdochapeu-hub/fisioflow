@@ -1000,7 +1000,7 @@
         &#8592; Voltar para a tela inicial
       </button>
     </div>
-    <div class="stamp" onclick="handleDevSecretTap()" style="margin:0 auto 18px;width:60px;height:60px;font-size:24px;border-radius:19px;cursor:pointer;">FF</div>
+    <div class="stamp" style="margin:0 auto 18px;width:60px;height:60px;font-size:24px;border-radius:19px;">FF</div>
     <h1 id="setupTitle" style="text-align:center;font-size:23px;color:var(--primary-deep);margin-bottom:8px;">Bem-vindo ao FisioFlow!</h1>
     <p id="setupIntro" style="text-align:center;color:var(--ink-soft);font-size:13.5px;margin:0 0 16px;">Preencha seus dados para começar. Eles aparecem nos recibos, comprovantes e prontuários.</p>
 
@@ -1152,7 +1152,7 @@
   <div id="mainScreen" class="hidden">
     <header class="top">
       <div class="brand">
-        <div class="stamp" onclick="handleDevSecretTap()" style="cursor:pointer;" title="FisioFlow">FF</div>
+        <div class="stamp">FF</div>
         <div style="min-width:0;">
           <h1 id="providerNameDisplay">FisioFlow</h1>
           <div class="sub">Fisioterapia & Prontuários</div>
@@ -1439,7 +1439,6 @@
         <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
         <button class="btn-header-feedback" type="button" onclick="openFeedbackModal()">💬 Fale com o desenvolvedor</button>
         <button class="btn-header-lgpd" type="button" onclick="openLgpdModal()">🔒 Termos &amp; LGPD</button>
-        <button id="btnDevPanel" class="btn-dev-secret" type="button" onclick="openDevModal()">🔐 Área Dev</button>
       </div>
       <div style="font-weight:600;color:var(--ink);">FisioFlow · Aplicativo gratuito de gestão para fisioterapia</div>
     </footer>
@@ -2149,10 +2148,13 @@ function ativarModoDemonstracao(){
 function carregarPacientesExemploRapido(){
   localStorage.removeItem('ff_demo_seeded');
   seedDemoDataIfEmpty();
-  var demoPts = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
-  var demoEnts = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
-  var demoEvos = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
-  var demoSchs = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
+  var demoPts = [], demoEnts = [], demoEvos = [], demoSchs = [];
+  try {
+    demoPts = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
+    demoEnts = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
+    demoEvos = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
+    demoSchs = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
+  } catch(e){}
 
   patients = demoPts;
   entries = demoEnts;
@@ -9985,108 +9987,26 @@ function contabilizarAcesso(eventoNome){
   var userName = (config && config.providerName) ? config.providerName : 'Visitante';
   registrarEventoAuditoria(userName, eventoNome || 'Acesso à tela');
   enviarRegistroAcessoGlobal(userName, eventoNome || 'Acesso à tela');
-  atualizarDevButtonBadge();
-}
-
-function atualizarDevButtonBadge(){
-  var btnDev = document.getElementById('btnDevPanel');
-  if (!btnDev) return;
-  var views = Number(localStorage.getItem(LOCAL_VIEWS_KEY) || '1');
-  if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
-    btnDev.classList.add('visivel');
-    btnDev.innerHTML = '📊 Acessos: <b>' + views.toLocaleString('pt-BR') + '</b> (Dev)';
-  } else {
-    btnDev.classList.remove('visivel');
-  }
 }
 
 function verificarModoDev(){
   var params = new URLSearchParams(window.location.search);
   var devParam = (params.get('dev') || '').trim().toLowerCase();
-  var autorizado = false;
 
   if (devParam) {
     if (DEV_AUTHORIZED_PASSWORDS.indexOf(devParam) > -1 || devParam === 'true') {
-      autorizado = true;
       try {
-        sessionStorage.setItem(DEV_SESSION_KEY, '1');
         var u = new URL(window.location.href);
         u.searchParams.delete('dev');
         window.history.replaceState({}, document.title, u.pathname + (u.search ? u.search : '') + u.hash);
       } catch(e){}
+      openDevModal();
     }
-  } else if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
-    autorizado = true;
-  }
-
-  atualizarDevButtonBadge();
-  if (autorizado && devParam) {
-    openDevModal();
-  }
-}
-
-var _devTapCount = 0;
-var _devTapTimer = null;
-function handleDevSecretTap(){
-  _devTapCount++;
-  if(_devTapTimer) clearTimeout(_devTapTimer);
-  _devTapTimer = setTimeout(function(){ _devTapCount = 0; }, 2500);
-  if(_devTapCount >= 5){
-    _devTapCount = 0;
-    promptDevAccess();
-  }
-}
-
-function promptDevAccess(){
-  if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
-    openDevModal();
-    return;
-  }
-  var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
-    '<div class="modal" style="max-width:380px;text-align:center;">' +
-      '<div class="grabber"></div>' +
-      '<div style="font-size:32px;margin-bottom:8px;">🔐</div>' +
-      '<h3 style="margin:0 0 6px;color:var(--primary-deep);font-size:18px;">Acesso do Desenvolvedor</h3>' +
-      '<p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;">Digite a senha de administrador ou acesse com o link secreto (?dev=senha):</p>' +
-      '<input id="inputDevSenha" type="password" placeholder="Senha do Desenvolvedor" style="text-align:center;font-size:15px;margin-bottom:12px;" autocomplete="current-password">' +
-      '<div id="devSenhaErro" class="error-banner hidden" style="margin-bottom:12px;">Senha incorreta. Tente novamente.</div>' +
-      '<div class="btn-row">' +
-        '<button type="button" class="btn ghost" onclick="closeModal()">Cancelar</button>' +
-        '<button type="button" class="btn primary" onclick="submitDevPassword()">Desbloquear</button>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-  openModal(html);
-  setTimeout(function(){
-    var inp = document.getElementById('inputDevSenha');
-    if (inp) {
-      inp.focus();
-      inp.onkeydown = function(e){ if (e.key === 'Enter') submitDevPassword(); };
-    }
-  }, 100);
-}
-
-function submitDevPassword(){
-  var inp = document.getElementById('inputDevSenha');
-  var erro = document.getElementById('devSenhaErro');
-  if (!inp) return;
-  var pass = inp.value.trim().toLowerCase();
-  if (DEV_AUTHORIZED_PASSWORDS.indexOf(pass) > -1) {
-    sessionStorage.setItem(DEV_SESSION_KEY, '1');
-    closeModal();
-    atualizarDevButtonBadge();
-    openDevModal();
-  } else {
-    if (erro) erro.classList.remove('hidden');
-    inp.focus();
   }
 }
 
 function sairModoDev(){
-  sessionStorage.removeItem(DEV_SESSION_KEY);
   closeModal();
-  atualizarDevButtonBadge();
-  alert('Modo Desenvolvedor desativado. O botão da Área Dev foi ocultado!');
 }
 
 function openDevModal(){
@@ -10129,7 +10049,7 @@ function openDevModal(){
           '<b style="color:#0f172a;font-size:13px;">🛡️ Status: Modo Administrador Ativo</b>' +
           '<div style="font-size:11.5px;color:#64748b;margin-top:2px;">Visitantes normais NÃO veem este painel nem o botão superior.</div>' +
         '</div>' +
-        '<button type="button" onclick="sairModoDev()" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:6px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;">🚪 Sair do Modo Dev</button>' +
+        '<button type="button" onclick="closeModal()" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:6px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;">✕ Fechar Painel</button>' +
       '</div>' +
 
       '<!-- KPIs -->' +

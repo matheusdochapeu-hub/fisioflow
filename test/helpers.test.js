@@ -435,61 +435,53 @@ describe('Route Engine, Haversine Estimation and Coordinates Matching', () => {
 });
 
 describe('Dev Mode Isolation & Stealth for Regular Users', () => {
-  test('atendimentos.html does not expose visible dev links in setupScreen or footer', () => {
-    // Assert no plain <a> tags or visible links point to promptDevAccess
+  test('atendimentos.html does not expose any visible dev elements, links or gesture handlers', () => {
+    // Assert no dev button in HTML
+    assert.equal(html.includes('id="btnDevPanel"'), false);
+    // Assert no visible links to dev area
     assert.equal(html.includes('Área do Desenvolvedor (Acesso administrativo)'), false);
     assert.equal(html.includes('Área Dev &amp; Contador de Acessos'), false);
     assert.equal(html.includes('Área Dev & Contador de Acessos'), false);
+    // Assert stamp has no secret gesture onclick
+    assert.equal(html.includes('handleDevSecretTap'), false);
   });
 
-  test('verificarModoDev leaves dev panel button hidden for regular users without ?dev param', () => {
-    const mockBtn = {
-      classList: {
-        _classes: new Set(['btn-dev-secret']),
-        add(c) { this._classes.add(c); },
-        remove(c) { this._classes.delete(c); },
-        contains(c) { return this._classes.has(c); }
-      },
-      innerHTML: ''
-    };
-
-    const mockStorage = {
-      getItem() { return null; },
-      setItem() {}
-    };
-
-    const mockSession = {
-      getItem() { return null; },
-      setItem() {},
-      removeItem() {}
-    };
+  test('verificarModoDev opens dev modal ONLY when specific secret parameter is present', () => {
+    let openedWithParam = false;
+    let openedWithoutParam = false;
+    let openedWithWrongParam = false;
 
     const DEV_AUTHORIZED_PASSWORDS = ['admin', 'matheus', 'fisioflow2026', '123456', 'matheus2026'];
-    const DEV_SESSION_KEY = 'fisioflow_dev_autenticado';
-    const LOCAL_VIEWS_KEY = 'fisioflow_dev_local_views_v1';
 
-    const atualizarDevButtonBadge = extractFnWithScope('atualizarDevButtonBadge', {
-      document: { getElementById(id) { return id === 'btnDevPanel' ? mockBtn : null; } },
-      localStorage: mockStorage,
-      sessionStorage: mockSession,
-      DEV_SESSION_KEY,
-      LOCAL_VIEWS_KEY
-    });
-
-    const openDevModal = () => {};
-
-    const verificarModoDevFn = extractFnWithScope('verificarModoDev', {
-      window: { location: { search: '', href: 'https://site.com/atendimentos.html' } },
+    // 1. Regular user visiting without ?dev
+    const verifyRegular = extractFnWithScope('verificarModoDev', {
+      window: { location: { search: '', href: 'https://site.com/atendimentos.html' }, history: { replaceState() {} } },
       document: { title: 'FisioFlow' },
-      sessionStorage: mockSession,
       DEV_AUTHORIZED_PASSWORDS,
-      DEV_SESSION_KEY,
-      atualizarDevButtonBadge,
-      openDevModal
+      openDevModal: () => { openedWithoutParam = true; }
     });
+    verifyRegular();
+    assert.equal(openedWithoutParam, false, 'Regular user must not trigger dev modal');
 
-    verificarModoDevFn();
-    assert.equal(mockBtn.classList.contains('visivel'), false);
+    // 2. Regular user with random query param
+    const verifyWrong = extractFnWithScope('verificarModoDev', {
+      window: { location: { search: '?dev=other', href: 'https://site.com/atendimentos.html?dev=other' }, history: { replaceState() {} } },
+      document: { title: 'FisioFlow' },
+      DEV_AUTHORIZED_PASSWORDS,
+      openDevModal: () => { openedWithWrongParam = true; }
+    });
+    verifyWrong();
+    assert.equal(openedWithWrongParam, false, 'Invalid dev param must not trigger dev modal');
+
+    // 3. Developer visiting with authorized specific link (?dev=admin)
+    const verifyDev = extractFnWithScope('verificarModoDev', {
+      window: { location: { search: '?dev=admin', href: 'https://site.com/atendimentos.html?dev=admin' }, history: { replaceState() {} } },
+      document: { title: 'FisioFlow' },
+      DEV_AUTHORIZED_PASSWORDS,
+      openDevModal: () => { openedWithParam = true; }
+    });
+    verifyDev();
+    assert.equal(openedWithParam, true, 'Authorized link must trigger dev modal');
   });
 });
 

@@ -274,12 +274,19 @@ function getRowObjectById_(sheet, id) {
 
 function deleteRowById_(sheet, id) {
   var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return null;
+  var headers = data[0];
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]) === String(id)) {
+      var rowObj = {};
+      for (var h = 0; h < headers.length; h++) {
+        rowObj[headers[h]] = data[i][h];
+      }
       sheet.deleteRow(i + 1);
-      break;
+      return rowObj;
     }
   }
+  return null;
 }
 
 /** Remove TODAS as linhas cujo valor na coluna colIndex (0-based) seja igual a value. */
@@ -1025,13 +1032,12 @@ function doPost(e) {
 
     } else if (body.action === 'delete_schedule') {
       var sAgDel = getAgendSheet_();
-      var rowDel = getRowObjectById_(sAgDel, body.id);
-      var evIdToDel = body.calendarEventId || (rowDel && rowDel.CalendarEventId) || '';
-      var calIdToDel = body.calendarId || (rowDel && rowDel.CalendarId) || DEFAULT_CALENDAR_ID || 'primary';
+      var deletedRow = deleteRowById_(sAgDel, body.id);
+      var evIdToDel = body.calendarEventId || (deletedRow && deletedRow.CalendarEventId) || '';
+      var calIdToDel = body.calendarId || (deletedRow && deletedRow.CalendarId) || DEFAULT_CALENDAR_ID || 'primary';
       if (evIdToDel) {
         deleteCalendarEventForSchedule_(evIdToDel, calIdToDel);
       }
-      deleteRowById_(sAgDel, body.id);
 
     /* ---------- Evoluções Clínicas ---------- */
     } else if (body.action === 'create_evolution') {
