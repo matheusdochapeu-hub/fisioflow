@@ -1,6 +1,6 @@
 /* Service worker do app Atendimentos (Fisioterapia).
    Incrementar CACHE_VERSION ao publicar mudanças de assets para invalidar o cache. */
-var CACHE_VERSION = 'atend-v33';
+var CACHE_VERSION = 'fisioflow-v1';
 var CORE_CACHE = CACHE_VERSION + '-core';
 var RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -13,7 +13,9 @@ var CORE_ASSETS = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon-maskable-512.png'
+  './icons/icon-maskable-512.png',
+  './icons/pix_qr.svg',
+  './scripts/qrcode.min.js'
 ];
 
 self.addEventListener('install', function(event){

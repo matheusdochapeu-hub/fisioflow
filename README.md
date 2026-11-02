@@ -58,41 +58,46 @@ Todos os dados ficam armazenados de forma **gratuita, segura e privada** na pró
   - Distribuição das receitas por forma de pagamento (Pix, Dinheiro, Cartão, Transferência).
   - Calendário interativo com marcação dos dias trabalhados.
 
+### 5. ☕ "Me pague um café" (Pix) & 💬 "Fale com o Desenvolvedor"
+- **Me pague um café**: botão presente no topo da aplicação e no rodapé das configurações, abrindo modal com QR Code Pix oficial estilizado e botão de cópia rápida da chave Pix (payload EMV/BR Code) para apoiar o desenvolvedor.
+- **Fale com o desenvolvedor**: botão para canal direto de feedback, dúvidas e sugestões integrado via formulário oficial com modal embutido.
+
+### 6. 📊 Contador de Acessos & Área Dev Secreta
+- **Contador de acessos**: métricas automáticas de visitas locais e eventos de uso registrados com data/hora, plataforma e navegador.
+- **Área Dev Protegida**:
+  - Acesso direto via parâmetro de URL: `?dev=admin` (ou `?token=fisioflow2026`).
+  - Ou clique no botão discreto **"⚙️ Área Dev"** no rodapé e insira a senha de desenvolvedor (`admin`, `matheus` ou `fisioflow2026`).
+  - Painel com KPIs em tempo real, auditoria completa dos últimos acessos, configuração de Webhook/Cloudflare Worker para agregação global e exportação de logs em JSON.
+
+---
+
+## ⚡ Integração e Onboarding com Conta Google (Primeiro Acesso)
+
+O FisioFlow conta com um assistente automatizado de primeiro acesso com a Conta Google:
+
+1. **Vincular Conta Google**: com 1 clique usando o Google Identity Services (GIS), o usuário seleciona e autoriza sua conta Google.
+2. **Criação Automática no Google Drive & Sheets**: o app cria instantaneamente uma nova planilha chamada `FisioFlow - Gestão Clínica` no Drive do usuário com todas as 4 abas estruturadas e formatadas (`Atendimentos`, `Pacientes`, `Evolucoes`, `Config`).
+3. **Vinculação com Google Agenda**: conecta o e-mail do calendário para sincronização automática de sessões e horários de atendimento.
+4. **Deploy do Apps Script**: exibe botão de 1 clique para copiar o `Code.gs` e atalho para abrir o editor do Apps Script da planilha criada para gerar a URL `/exec`.
+
 ---
 
 ## 🚀 Como Configurar e Utilizar
 
 Para colocar o **FisioFlow** em produção para você ou seus clientes:
 
-### Passo 1: Configurar a Planilha no Google Drive
+### Método A: Onboarding Automático Google (Recomendado)
+1. Abra o arquivo [`atendimentos.html`](atendimentos.html) no navegador ou acesse a versão hospedada no GitHub Pages.
+2. Na tela de boas-vindas, clique em **"Conectar com o Google"**.
+3. Autorize o acesso — o FisioFlow criará sua planilha estruturada no Google Drive e vinculará sua Google Agenda automaticamente.
+4. Clique em **"Copiar Code.gs"** e siga o link direto para implantar seu Web App no Apps Script.
+
+### Método B: Configuração Manual
 1. Crie uma nova planilha no seu [Google Drive](https://drive.google.com).
-2. Nomeie como desejar (ex: `FisioFlow - Gestão Clínica`).
-
-### Passo 2: Configurar o Google Apps Script
-1. Na planilha, clique no menu superior em **Extensões > Apps Script**.
-2. Apague o código padrão que estiver no arquivo `Código.gs`.
-3. Copie todo o conteúdo do arquivo [`Code.gs`](Code.gs) deste repositório e cole no editor.
-4. Clique no ícone de salvar (💾).
-
-### Passo 3: Implantar como App da Web
-1. No canto superior direito do Apps Script, clique no botão azul **Implantar > Nova implantação**.
-2. Clique no ícone de engrenagem ⚙️ ao lado de "Selecione o tipo" e escolha **App da Web**.
-3. Preencha as opções:
-   - **Descrição**: `FisioFlow API`
-   - **Executar como**: `Eu (seu e-mail)`
-   - **Quem pode acessar**: `Qualquer pessoa` *(necessário para o aplicativo PWA no navegador poder consultar e salvar dados)*
-4. Clique em **Implantar** e autorize as permissões solicitadas pela sua conta Google.
-5. Copie a **URL do app da Web** gerada (termina com `/exec`).
-
-### Passo 4: Acessar e Conectar o FisioFlow
-1. Abra o arquivo [`atendimentos.html`](atendimentos.html) no navegador ou hospede os arquivos em um serviço estático gratuito (como [GitHub Pages](https://pages.github.com), Netlify ou Vercel).
-2. Na tela de boas-vindas do app:
-   - Informe o seu nome profissional e registro CREFITO.
-   - Cole a URL do Apps Script (`/exec`) no campo correspondente.
-   - (Opcional) Informe o e-mail da sua Google Agenda e endereço base.
-3. Clique em **Salvar e Começar**. Pronto! O aplicativo está configurado e pronto para uso.
-
-> 💡 **Dica para distribuição a terceiros**: Se você for hospedar uma versão fixa para um cliente, pode inserir a URL gerada diretamente na constante `SCRIPT_URL` no topo de `atendimentos.html`. Dessa forma, o app já abre direto conectado para o usuário.
+2. Na planilha, clique em **Extensões > Apps Script**.
+3. Apague o conteúdo padrão, cole o código do arquivo [`Code.gs`](Code.gs) e salve.
+4. Clique em **Implantar > Nova implantação**, escolha **App da Web**, configure para executar como **Eu** e acesso para **Qualquer pessoa**.
+5. Copie a URL gerada (`/exec`) e cole na tela de configuração inicial do FisioFlow.
 
 ---
 
@@ -121,11 +126,11 @@ node --test test/*.test.js
 ├── Code.gs                 # Backend Google Apps Script (API REST/RPC da planilha)
 ├── index.html              # Ponto de entrada e redirecionamento inicial
 ├── manifest.json           # Manifesto PWA com metadados e ícones
-├── sw.js                   # Service Worker para cache e funcionamento offline
+├── sw.js                   # Service Worker para cache e funcionamento offline (v1)
 ├── package.json            # Configurações do projeto e scripts de teste
-├── icons/                  # Ícones do aplicativo em diferentes resoluções
+├── icons/                  # Ícones do aplicativo e QR Code Pix oficial
 ├── test/                   # Testes unitários automatizados
-├── scripts/                # Scripts auxiliares e sincronização
+├── scripts/                # Biblioteca QR Code e scripts de build
 └── MEMORIA_ATUALIZACOES.md # Histórico técnico de lançamentos e versões
 ```
 
@@ -134,7 +139,7 @@ node --test test/*.test.js
 ## 🔒 Segurança e Privacidade
 
 - **Zero compartilhamento de dados**: todos os dados de pacientes, registros clínicos e informações financeiras permanecem sob controle exclusivo da conta Google do proprietário da planilha.
-- **Sem rastreamento**: o FisioFlow não utiliza bibliotecas de telemetria de terceiros.
+- **Sem rastreamento invasivo**: métricas estritamente agregadas e anônimas locais no dispositivo.
 - **Bloqueio de concorrência**: o backend utiliza `LockService` para garantir integridade dos registros mesmo com múltiplas gravações quase simultâneas.
 
 ---

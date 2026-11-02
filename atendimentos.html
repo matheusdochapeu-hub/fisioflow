@@ -16,6 +16,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="scripts/qrcode.min.js"></script>
 <style>
   :root{
     /* Paleta terracota / outono */
@@ -768,6 +770,120 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   @keyframes fade{from{opacity:0;}to{opacity:1;}}
   @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+
+  /* Estilos: Me Pague um Café, Feedback, Área Dev e Google Onboarding */
+  .btn-header-pix {
+    background: #286e34;
+    color: #ffffff !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    min-height: 38px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s, background 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn-header-pix:hover { background: #1f5829; transform: translateY(-2px); }
+
+  .btn-header-feedback {
+    background: var(--surface);
+    color: var(--primary-deep);
+    border: 1px solid var(--line);
+    min-height: 38px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn-header-feedback:hover { background: var(--primary-soft); transform: translateY(-2px); }
+
+  .btn-dev-secret {
+    display: none !important;
+    background: #0f172a;
+    color: #facc15;
+    border: 1.5px solid #facc15;
+    min-height: 38px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.80rem;
+    font-weight: 800;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn-dev-secret.visivel { display: inline-flex !important; }
+  .btn-dev-secret:hover { background: #1e293b; transform: translateY(-2px); }
+
+  .btn-copy-pix {
+    width: 100%;
+    background: #286e34;
+    color: #ffffff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.94rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+  .btn-copy-pix:hover { background: #1f5829; }
+
+  .btn-google-official {
+    width: 100%;
+    background: #ffffff;
+    color: #1f2937;
+    border: 1.5px solid #cbd5e1;
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.15s;
+  }
+  .btn-google-official:hover {
+    border-color: #4285F4;
+    background: #f8fafc;
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+  }
+  .pix-modal-card {
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -783,6 +899,24 @@
     <div class="stamp" style="margin:0 auto 18px;width:60px;height:60px;font-size:24px;border-radius:19px;">FF</div>
     <h1 id="setupTitle" style="text-align:center;font-size:23px;color:var(--primary-deep);margin-bottom:8px;">Bem-vindo ao FisioFlow!</h1>
     <p id="setupIntro" style="text-align:center;color:var(--ink-soft);font-size:13.5px;margin:0 0 16px;">Preencha seus dados para começar. Eles aparecem nos recibos, comprovantes e prontuários.</p>
+
+    <!-- Onboarding Inteligente com Google: Vinculação de Conta, Google Agenda e Google Sheets/Drive -->
+    <div id="googleOnboardCard" class="card" style="border: 1.5px solid #4285F4; background: #f8faff; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(66, 133, 244, 0.08);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <div style="font-weight:700;font-size:14.5px;color:#1e3a8a;">Primeiro Acesso: Conectar Conta Google</div>
+      </div>
+      <p style="font-size:12.5px;color:#334155;margin:0 0 12px;line-height:1.45;">
+        Conecte com sua conta Google para <strong>vincular sua Google Agenda</strong> automaticamente e <strong>criar a planilha de banco de dados/backup no Google Drive</strong> com 1 toque!
+      </p>
+      <div id="g_id_signin_box" style="display:flex;flex-direction:column;gap:8px;">
+        <button type="button" id="btnGoogleAuthOnboarding" class="btn-google-official" onclick="handleGoogleOneClickOnboarding()">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          <span>Conectar Conta Google e Autoconfigurar</span>
+        </button>
+        <div id="googleStatusFeedback" style="display:none;padding:10px;border-radius:8px;font-size:12px;line-height:1.45;margin-top:6px;"></div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="field-title" style="font-weight:700;margin-bottom:12px;color:var(--primary);">Dados da Profissional</div>
@@ -821,6 +955,17 @@
       <button class="btn ghost" style="width:100%;margin-top:10px;" onclick="document.getElementById('importFile').click()">&#11014; Restaurar de um backup (.json)</button>
       <input id="importFile" type="file" accept="application/json,.json" class="hidden" onchange="importBackup(event)">
     </div>
+
+    <!-- Links de Apoio, Feedback e Área Dev no Setup -->
+    <div style="margin-top:24px;text-align:center;">
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
+        <button class="btn-header-feedback" type="button" onclick="openFeedbackModal()">💬 Fale com o desenvolvedor</button>
+      </div>
+      <div>
+        <a href="javascript:void(0)" onclick="promptDevAccess()" style="color:var(--ink-soft);opacity:0.65;font-size:11.5px;text-decoration:none;">🔐 Área do Desenvolvedor (Acesso administrativo)</a>
+      </div>
+    </div>
   </div>
 
   <!-- Tela Principal -->
@@ -834,6 +979,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <button id="btnHeaderPix" class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
+        <button id="btnHeaderFeedback" class="btn-header-feedback" type="button" onclick="openFeedbackModal()" title="Fale com o desenvolvedor">💬 Suporte</button>
+        <button id="btnDevPanel" class="btn-dev-secret" type="button" onclick="openDevModal()">🔐 Área Dev</button>
         <button id="installBtn" class="icon-btn hidden" onclick="promptInstall()" title="Instalar app" aria-label="Instalar app">&#11015;</button>
         <button class="icon-btn" onclick="openSettings()" title="Configurações" aria-label="Configurações">&#9881;</button>
       </div>
@@ -1077,6 +1225,18 @@
         <div id="loadingState" class="loading"><div class="spinner"></div>Carregando...</div>
       </div>
     </div>
+
+    <!-- Rodapé FisioFlow: Café, Feedback e Área Dev -->
+    <footer style="margin: 40px 0 28px; text-align: center; color: var(--ink-soft); font-size: 12px; border-top: 1px solid var(--line); padding-top: 20px;">
+      <div style="display:flex; justify-content:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+        <button class="btn-header-pix" type="button" onclick="openPixModal()">☕ Me pague um café</button>
+        <button class="btn-header-feedback" type="button" onclick="openFeedbackModal()">💬 Fale com o desenvolvedor</button>
+      </div>
+      <div style="font-weight:600;color:var(--ink);">FisioFlow · Aplicativo gratuito de gestão para fisioterapia</div>
+      <div style="margin-top:6px;">
+        <a href="javascript:void(0)" onclick="promptDevAccess()" style="color:var(--ink-soft);opacity:0.65;font-size:11px;text-decoration:none;">🔐 Área Dev &amp; Contador de Acessos</a>
+      </div>
+    </footer>
 
   </div>
 
@@ -7968,7 +8128,630 @@ async function init(){
   }
 }
 
+/* ============================================================
+   MÓDULO: ME PAGUE UM CAFÉ (PIX)
+   ============================================================ */
+var PIX_PAYLOAD = "00020126580014br.gov.bcb.pix01364c83415e-0b75-4a40-b0b6-83a0c12a71355204000053039865802BR5911MATHEUS19176009Sao Paulo610901227-20062230519daqr21591091736170363041A4B";
+
+function openPixModal(){
+  var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
+    '<div class="modal pix-modal-card">' +
+      '<div class="grabber"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+        '<h3 style="margin:0;font-size:1.3rem;color:#286e34;display:flex;align-items:center;gap:8px;">💚 Manda um Pix!</h3>' +
+        '<button type="button" class="btn ghost small" onclick="closeModal()" style="width:auto;padding:2px 8px;font-size:14px;">✕</button>' +
+      '</div>' +
+      '<p style="margin:0 0 16px;font-size:0.92rem;line-height:1.5;color:var(--ink-soft);">' +
+        'Este app é gratuito e feito com carinho. Se ele te ajudou, considere apoiar com um Pix de qualquer valor — é opcional e muito bem-vindo! 💚' +
+      '</p>' +
+      '<div class="pix-qr-box" style="display:flex;justify-content:center;align-items:center;padding:12px;background:#ffffff;border:2px solid #dfe7e2;border-radius:16px;margin:0 auto 12px;max-width:234px;box-shadow:0 4px 14px rgba(0,0,0,0.04);">' +
+        '<img src="icons/pix_qr.svg" alt="QR Code Pix" width="210" height="210" style="display:block;width:210px;height:210px;">' +
+      '</div>' +
+      '<p style="margin:0 0 14px;font-size:0.84rem;color:#7c8782;font-weight:600;">Recebedor: Matheus · São Paulo</p>' +
+      '<button type="button" id="btnCopiarPixModal" class="btn-copy-pix" onclick="copiarChavePix(this)">📋 Copiar chave Pix</button>' +
+    '</div>' +
+  '</div>';
+  openModal(html);
+  contabilizarAcesso('Abriu Modal Pix');
+}
+
+async function copiarChavePix(btn){
+  try {
+    await navigator.clipboard.writeText(PIX_PAYLOAD);
+  } catch(e) {
+    var ta = document.createElement('textarea');
+    ta.value = PIX_PAYLOAD;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  var orig = btn.innerHTML;
+  btn.innerHTML = '✅ Chave Pix copiada!';
+  btn.style.background = '#1f5829';
+  setTimeout(function(){
+    btn.innerHTML = orig;
+    btn.style.background = '#286e34';
+  }, 2600);
+  contabilizarAcesso('Copiou Chave Pix');
+}
+
+/* ============================================================
+   MÓDULO: FALE COM O DESENVOLVEDOR (GOOGLE FORMS)
+   ============================================================ */
+var FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeExwQLLXY9nAI6n32576JQa5Oe_PEftQVVt5DUeYVUiAxKNA/viewform";
+
+function openFeedbackModal(){
+  var embedUrl = FEEDBACK_FORM_URL + (FEEDBACK_FORM_URL.indexOf('?') > -1 ? '&' : '?') + 'embedded=true';
+  var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
+    '<div class="modal" style="max-width:680px;height:88vh;display:flex;flex-direction:column;padding:18px;">' +
+      '<div class="grabber"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<h3 style="margin:0;font-size:1.25rem;color:var(--primary-deep);display:flex;align-items:center;gap:6px;">💬 Fale com o Desenvolvedor</h3>' +
+        '<button type="button" class="btn ghost small" onclick="closeModal()" style="width:auto;padding:2px 8px;font-size:14px;">✕</button>' +
+      '</div>' +
+      '<p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;line-height:1.4;">' +
+        'Dúvidas, sugestões de melhorias, relato de problemas ou elogios. Sua mensagem chega diretamente ao desenvolvedor!' +
+      '</p>' +
+      '<div style="flex:1;position:relative;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid var(--line);">' +
+        '<iframe src="' + embedUrl + '" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0" style="border:none;">Carregando formulário…</iframe>' +
+      '</div>' +
+      '<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;">' +
+        '<a href="' + FEEDBACK_FORM_URL + '" target="_blank" rel="noopener noreferrer" style="color:var(--primary);font-weight:600;text-decoration:underline;">Não carregou? Abrir formulário em nova aba ↗</a>' +
+        '<button type="button" class="btn primary" onclick="closeModal()" style="width:auto;padding:6px 16px;">Fechar</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  openModal(html);
+  contabilizarAcesso('Abriu Form Fale com Dev');
+}
+
+/* ============================================================
+   MÓDULO: CONTADOR DE ACESSOS & ÁREA DEV COM SENHA OU LINK ESPECÍFICO
+   ============================================================ */
+var LOCAL_VIEWS_KEY = 'fisioflow_dev_local_views_v1';
+var AUDIT_LOG_KEY = 'fisioflow_dev_audit_logs_v1';
+var AUDIT_WEBHOOK_KEY = 'fisioflow_audit_webhook_url_v1';
+var OAUTH_CLIENT_ID_KEY = 'fisioflow_google_client_id_v1';
+var DEV_SESSION_KEY = 'fisioflow_dev_autenticado';
+
+var GOOGLE_CLIENT_ID_FIXO = "1006150921481-phsaf0s3j0ie65d69j3l1uth3b895148.apps.googleusercontent.com";
+var DEV_AUTHORIZED_EMAILS = ['matheusdochapeu@gmail.com'];
+var DEV_AUTHORIZED_PASSWORDS = ['admin', 'matheus', 'fisioflow2026', '123456'];
+
+function obterGoogleClientId(){
+  var salvo = (localStorage.getItem(OAUTH_CLIENT_ID_KEY) || '').trim().replace(/^["']|["']$/g, '');
+  var fixo = (GOOGLE_CLIENT_ID_FIXO || '').trim().replace(/^["']|["']$/g, '');
+  var id = salvo || fixo;
+  if (!id) return '';
+  return (id.toLowerCase().indexOf('.apps.googleusercontent.com') > -1) ? id : '';
+}
+
+function obterAuditWebhookUrl(){
+  return (localStorage.getItem(AUDIT_WEBHOOK_KEY) || '').trim();
+}
+
+function registrarEventoAuditoria(usuarioStr, eventoStr){
+  try {
+    var logs = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]');
+    logs.unshift({
+      ts: new Date().toLocaleString('pt-BR'),
+      usuario: String(usuarioStr || (config && config.providerName) || 'Visitante').slice(0, 120),
+      evento: String(eventoStr || 'Acesso').slice(0, 120)
+    });
+    localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(logs.slice(0, 200)));
+  } catch(e){}
+}
+
+async function enviarRegistroAcessoGlobal(usuarioStr, eventoStr){
+  try {
+    var webhook = obterAuditWebhookUrl();
+    if (!webhook) return;
+    var payload = JSON.stringify({
+      app: 'FisioFlow',
+      usuario: String(usuarioStr || (config && config.providerName) || 'Visitante').slice(0, 120),
+      evento: String(eventoStr || 'Acesso').slice(0, 120),
+      ts: new Date().toISOString(),
+      ua: (navigator.userAgent || '').slice(0, 150)
+    });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(webhook, new Blob([payload], { type: 'text/plain;charset=utf-8' }));
+    } else {
+      fetch(webhook, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload }).catch(function(){});
+    }
+  } catch(e){}
+}
+
+function contabilizarAcesso(eventoNome){
+  var views = Number(localStorage.getItem(LOCAL_VIEWS_KEY) || '0') + 1;
+  localStorage.setItem(LOCAL_VIEWS_KEY, String(views));
+  var userName = (config && config.providerName) ? config.providerName : 'Visitante';
+  registrarEventoAuditoria(userName, eventoNome || 'Acesso à tela');
+  enviarRegistroAcessoGlobal(userName, eventoNome || 'Acesso à tela');
+  atualizarDevButtonBadge();
+}
+
+function atualizarDevButtonBadge(){
+  var btnDev = document.getElementById('btnDevPanel');
+  if (!btnDev) return;
+  var views = Number(localStorage.getItem(LOCAL_VIEWS_KEY) || '1');
+  if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
+    btnDev.classList.add('visivel');
+    btnDev.innerHTML = '📊 Acessos: <b>' + views.toLocaleString('pt-BR') + '</b> (Dev)';
+  } else {
+    btnDev.classList.remove('visivel');
+  }
+}
+
+function verificarModoDev(){
+  var params = new URLSearchParams(window.location.search);
+  var devParam = (params.get('dev') || '').trim().toLowerCase();
+  var autorizado = false;
+
+  if (devParam) {
+    if (DEV_AUTHORIZED_PASSWORDS.indexOf(devParam) > -1 || devParam === 'true') {
+      autorizado = true;
+      try {
+        sessionStorage.setItem(DEV_SESSION_KEY, '1');
+        var u = new URL(window.location.href);
+        u.searchParams.delete('dev');
+        window.history.replaceState({}, document.title, u.pathname + (u.search ? u.search : '') + u.hash);
+      } catch(e){}
+    }
+  } else if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
+    autorizado = true;
+  } else if (config && config.calendarId && DEV_AUTHORIZED_EMAILS.indexOf(config.calendarId.toLowerCase()) > -1) {
+    autorizado = true;
+    try { sessionStorage.setItem(DEV_SESSION_KEY, '1'); } catch(e){}
+  }
+
+  atualizarDevButtonBadge();
+  if (autorizado && devParam) {
+    openDevModal();
+  }
+}
+
+function promptDevAccess(){
+  if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
+    openDevModal();
+    return;
+  }
+  var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
+    '<div class="modal" style="max-width:380px;text-align:center;">' +
+      '<div class="grabber"></div>' +
+      '<div style="font-size:32px;margin-bottom:8px;">🔐</div>' +
+      '<h3 style="margin:0 0 6px;color:var(--primary-deep);font-size:18px;">Acesso do Desenvolvedor</h3>' +
+      '<p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;">Digite a senha de administrador ou acesse com o link secreto (?dev=senha):</p>' +
+      '<input id="inputDevSenha" type="password" placeholder="Senha do Desenvolvedor" style="text-align:center;font-size:15px;margin-bottom:12px;" autocomplete="current-password">' +
+      '<div id="devSenhaErro" class="error-banner hidden" style="margin-bottom:12px;">Senha incorreta. Tente novamente.</div>' +
+      '<div class="btn-row">' +
+        '<button type="button" class="btn ghost" onclick="closeModal()">Cancelar</button>' +
+        '<button type="button" class="btn primary" onclick="submitDevPassword()">Desbloquear</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  openModal(html);
+  setTimeout(function(){
+    var inp = document.getElementById('inputDevSenha');
+    if (inp) {
+      inp.focus();
+      inp.onkeydown = function(e){ if (e.key === 'Enter') submitDevPassword(); };
+    }
+  }, 100);
+}
+
+function submitDevPassword(){
+  var inp = document.getElementById('inputDevSenha');
+  var erro = document.getElementById('devSenhaErro');
+  if (!inp) return;
+  var pass = inp.value.trim().toLowerCase();
+  if (DEV_AUTHORIZED_PASSWORDS.indexOf(pass) > -1) {
+    sessionStorage.setItem(DEV_SESSION_KEY, '1');
+    closeModal();
+    atualizarDevButtonBadge();
+    openDevModal();
+  } else {
+    if (erro) erro.classList.remove('hidden');
+    inp.focus();
+  }
+}
+
+function sairModoDev(){
+  sessionStorage.removeItem(DEV_SESSION_KEY);
+  closeModal();
+  atualizarDevButtonBadge();
+  alert('Modo Desenvolvedor desativado. O botão da Área Dev foi ocultado!');
+}
+
+function openDevModal(){
+  var viewsLocais = Number(localStorage.getItem(LOCAL_VIEWS_KEY) || '1');
+  var logs = [];
+  try { logs = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]'); } catch(e){}
+  var uniqueUsers = new Set();
+  var uniqueLogins = 0;
+  logs.forEach(function(l){
+    if (l.usuario) uniqueUsers.add(l.usuario);
+    if (l.evento && l.evento.indexOf('Login') > -1) uniqueLogins++;
+  });
+
+  var rowsHtml = logs.slice(0, 50).map(function(l){
+    var isLogin = l.evento && l.evento.indexOf('Login') > -1;
+    var badgeStyle = isLogin
+      ? 'background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:999px;font-weight:700;'
+      : 'background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;padding:2px 8px;border-radius:999px;font-weight:700;';
+    return '<tr>' +
+      '<td style="white-space:nowrap;font-size:11.5px;padding:6px 8px;border-bottom:1px solid var(--line);">' + escapeHtml(l.ts || '-') + '</td>' +
+      '<td style="font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600;">' + escapeHtml(l.usuario || 'Visitante') + '</td>' +
+      '<td style="padding:6px 8px;border-bottom:1px solid var(--line);"><span style="' + badgeStyle + '">' + (isLogin ? '🔑 ' : '🌐 ') + escapeHtml(l.evento || 'Acesso') + '</span></td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="3" style="padding:12px;text-align:center;color:var(--ink-soft);">Nenhum evento registrado ainda.</td></tr>';
+
+  var webhookVal = obterAuditWebhookUrl();
+  var clientIdVal = obterGoogleClientId();
+
+  var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
+    '<div class="modal" style="max-width:760px;max-height:90vh;overflow-y:auto;padding:22px;">' +
+      '<div class="grabber"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+        '<h3 style="margin:0;font-size:1.35rem;color:var(--primary-deep);display:flex;align-items:center;gap:8px;">🔐 Painel do Desenvolvedor &amp; Acessos</h3>' +
+        '<button type="button" class="btn ghost small" onclick="closeModal()" style="width:auto;padding:2px 8px;font-size:14px;">✕</button>' +
+      '</div>' +
+
+      '<!-- Status Admin -->' +
+      '<div style="background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
+        '<div>' +
+          '<b style="color:#0f172a;font-size:13px;">🛡️ Status: Modo Administrador Ativo</b>' +
+          '<div style="font-size:11.5px;color:#64748b;margin-top:2px;">Visitantes normais NÃO veem este painel nem o botão superior.</div>' +
+        '</div>' +
+        '<button type="button" onclick="sairModoDev()" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:6px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;">🚪 Sair do Modo Dev</button>' +
+      '</div>' +
+
+      '<!-- KPIs -->' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;margin-bottom:16px;">' +
+        '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">' +
+          '<div style="font-size:11px;color:var(--ink-soft);font-weight:700;">🌐 TOTAL DE ACESSOS</div>' +
+          '<div style="font-size:22px;font-weight:800;color:var(--primary-deep);margin-top:4px;">' + viewsLocais.toLocaleString('pt-BR') + '</div>' +
+        '</div>' +
+        '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">' +
+          '<div style="font-size:11px;color:var(--ink-soft);font-weight:700;">👥 USUÁRIOS ÚNICOS</div>' +
+          '<div style="font-size:22px;font-weight:800;color:#286e34;margin-top:4px;">' + Math.max(1, uniqueUsers.size).toLocaleString('pt-BR') + '</div>' +
+        '</div>' +
+        '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">' +
+          '<div style="font-size:11px;color:var(--ink-soft);font-weight:700;">🔑 LOGINS GOOGLE</div>' +
+          '<div style="font-size:22px;font-weight:800;color:#0284c7;margin-top:4px;">' + uniqueLogins.toLocaleString('pt-BR') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<!-- Tabela de Auditoria -->' +
+      '<div style="margin-bottom:16px;">' +
+        '<div style="font-weight:700;font-size:12.5px;color:var(--ink);margin-bottom:6px;">📋 Histórico em Tempo Real de Acessos &amp; Ações:</div>' +
+        '<div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);">' +
+          '<table style="width:100%;border-collapse:collapse;text-align:left;">' +
+            '<thead>' +
+              '<tr style="background:var(--bg);">' +
+                '<th style="padding:8px;font-size:11px;border-bottom:1.5px solid var(--line);">Data / Hora</th>' +
+                '<th style="padding:8px;font-size:11px;border-bottom:1.5px solid var(--line);">Usuário</th>' +
+                '<th style="padding:8px;font-size:11px;border-bottom:1.5px solid var(--line);">Evento</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+
+      '<!-- Webhook Global -->' +
+      '<details style="margin-bottom:14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;">' +
+        '<summary style="font-weight:700;font-size:12.5px;color:var(--ink);cursor:pointer;">📊 Webhook para Registro Centralizado (Google Sheets)</summary>' +
+        '<div style="margin-top:10px;">' +
+          '<p style="margin:0 0 8px;font-size:11.5px;color:var(--ink-soft);line-height:1.4;">' +
+            'Cole a URL de um Web App (/exec) do Apps Script para receber e salvar automaticamente todos os acessos dos seus usuários numa planilha central:' +
+          '</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<input id="inputDevWebhook" type="text" placeholder="https://script.google.com/macros/s/.../exec" value="' + escapeHtml(webhookVal) + '" style="flex:1;min-width:240px;">' +
+            '<button type="button" class="btn primary small" onclick="salvarDevWebhookUrl()">Salvar Webhook</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      '<!-- Google Client ID -->' +
+      '<details style="margin-bottom:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;">' +
+        '<summary style="font-weight:700;font-size:12.5px;color:var(--ink);cursor:pointer;">⚙️ Google OAuth Client ID (Personalizar Domínio)</summary>' +
+        '<div style="margin-top:10px;">' +
+          '<p style="margin:0 0 8px;font-size:11.5px;color:var(--ink-soft);line-height:1.4;">' +
+            'Client ID para Google Sign-In e automação de Google Drive / Sheets:' +
+          '</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<input id="inputDevClientId" type="text" placeholder="Ex: 123456789-xyz.apps.googleusercontent.com" value="' + escapeHtml(clientIdVal) + '" style="flex:1;min-width:240px;">' +
+            '<button type="button" class="btn primary small" onclick="salvarDevClientId()">Salvar Client ID</button>' +
+            '<button type="button" class="btn ghost small" onclick="limparDevClientId()">Remover</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button type="button" class="btn ghost small" onclick="exportarLogsDev()">📥 Exportar JSON</button>' +
+          '<button type="button" class="btn ghost small" onclick="limparLogsDev()">🗑️ Limpar Histórico</button>' +
+        '</div>' +
+        '<button type="button" class="btn primary small" onclick="closeModal()">Fechar Painel</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  openModal(html);
+}
+
+function salvarDevWebhookUrl(){
+  var inp = document.getElementById('inputDevWebhook');
+  if(!inp) return;
+  var url = inp.value.trim();
+  if(url){
+    localStorage.setItem(AUDIT_WEBHOOK_KEY, url);
+    alert('URL do Webhook de Auditoria salva com sucesso!');
+  } else {
+    localStorage.removeItem(AUDIT_WEBHOOK_KEY);
+    alert('URL do Webhook removida.');
+  }
+}
+
+function salvarDevClientId(){
+  var inp = document.getElementById('inputDevClientId');
+  if(!inp) return;
+  var cid = inp.value.trim().replace(/^["']|["']$/g, '');
+  if(cid){
+    localStorage.setItem(OAUTH_CLIENT_ID_KEY, cid);
+    alert('Google Client ID salvo com sucesso!');
+  } else {
+    localStorage.removeItem(OAUTH_CLIENT_ID_KEY);
+    alert('Client ID removido. Usando valor padrão.');
+  }
+}
+
+function limparDevClientId(){
+  localStorage.removeItem(OAUTH_CLIENT_ID_KEY);
+  alert('Client ID customizado removido.');
+  openDevModal();
+}
+
+function exportarLogsDev(){
+  var logs = [];
+  try { logs = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]'); } catch(e){}
+  var relatorio = {
+    app: 'FisioFlow',
+    exportado_em: new Date().toISOString(),
+    total_acessos_locais: Number(localStorage.getItem(LOCAL_VIEWS_KEY) || '1'),
+    logs: logs
+  };
+  var blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fisioflow-acessos-audit-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function limparLogsDev(){
+  if(confirm('Tem certeza de que deseja limpar os registros de acesso locais?')){
+    localStorage.removeItem(AUDIT_LOG_KEY);
+    localStorage.setItem(LOCAL_VIEWS_KEY, '1');
+    alert('Histórico de acessos locais redefinido.');
+    openDevModal();
+  }
+}
+
+/* ============================================================
+   MÓDULO: ONBOARDING INTELIGENTE COM GOOGLE
+   1) Conectar com Conta Google
+   2) Criar Planilha Google Sheets no Drive para Banco & Backup
+   3) Vincular Google Agenda Automaticamente
+   ============================================================ */
+var _googleAccessToken = null;
+
+async function handleGoogleOneClickOnboarding(){
+  var fb = document.getElementById('googleStatusFeedback');
+  if(fb){
+    fb.style.display = 'block';
+    fb.style.background = '#e0f2fe';
+    fb.style.color = '#0369a1';
+    fb.style.border = '1px solid #7dd3fc';
+    fb.innerHTML = '⏳ Conectando ao Google... Por favor, autorize o acesso na janela que se abrir.';
+  }
+
+  var clientId = obterGoogleClientId();
+
+  // Verifica se o SDK do Google Identity Services carregou
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    var emailManual = prompt('Digite seu e-mail do Google (Gmail) para vincular à sua Google Agenda e Planilha:');
+    if (emailManual && emailManual.indexOf('@') > -1) {
+      document.getElementById('calendarIdInput').value = emailManual.trim();
+      document.getElementById('providerContactInput').value = emailManual.trim();
+      if(fb){
+        fb.style.background = '#dcfce7';
+        fb.style.color = '#166534';
+        fb.style.border = '1px solid #86efac';
+        fb.innerHTML = '✅ Google Agenda vinculada ao e-mail: <b>' + escapeHtml(emailManual) + '</b>!<br>Agora prossiga informando seu Nome e o Link da Planilha abaixo.';
+      }
+    }
+    return;
+  }
+
+  try {
+    var tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
+      callback: async function(resp){
+        if (resp.error) {
+          if(fb){
+            fb.style.background = '#fff1f2';
+            fb.style.color = '#9f1239';
+            fb.style.border = '1px solid #fda4af';
+            fb.innerHTML = '⚠️ Não foi possível autenticar via Google (' + escapeHtml(resp.error) + '). Você pode preencher seus dados manualmente abaixo sem problemas.';
+          }
+          return;
+        }
+        _googleAccessToken = resp.access_token;
+        await processGoogleOnboardingWithToken(resp.access_token);
+      }
+    });
+
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+  } catch(err) {
+    if(fb){
+      fb.style.background = '#fff1f2';
+      fb.style.color = '#9f1239';
+      fb.style.border = '1px solid #fda4af';
+      fb.innerHTML = '⚠️ ' + escapeHtml(err.message) + '<br>Você pode preencher o formulário manualmente abaixo.';
+    }
+  }
+}
+
+async function processGoogleOnboardingWithToken(token){
+  var fb = document.getElementById('googleStatusFeedback');
+  if(fb) fb.innerHTML = '⏳ Obtendo seus dados do Google...';
+
+  var userProfile = null;
+  try {
+    var r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if(r.ok) userProfile = await r.json();
+  } catch(e){}
+
+  var userEmail = (userProfile && userProfile.email) ? userProfile.email : '';
+  var userName = (userProfile && userProfile.name) ? userProfile.name : '';
+
+  if(userName && document.getElementById('providerNameInput') && !document.getElementById('providerNameInput').value){
+    document.getElementById('providerNameInput').value = userName;
+  }
+  if(userEmail){
+    if(document.getElementById('calendarIdInput')) document.getElementById('calendarIdInput').value = userEmail;
+    try { localStorage.setItem('ft_calendar_id', userEmail); } catch(e){}
+  }
+
+  // Registra o evento de login
+  contabilizarAcesso('Login Google Onboarding: ' + (userEmail || userName));
+
+  if(fb) fb.innerHTML = '⏳ Criando planilha <strong>FisioFlow - Banco de Dados & Backup</strong> no seu Google Drive...';
+
+  // Cria a planilha no Google Drive do usuário via Google Sheets API v4
+  var createdSheet = await createGoogleSpreadsheetWithHeaders(token);
+
+  if (createdSheet && createdSheet.spreadsheetId) {
+    var sheetUrl = 'https://docs.google.com/spreadsheets/d/' + createdSheet.spreadsheetId + '/edit';
+    if(fb){
+      fb.style.background = '#dcfce7';
+      fb.style.color = '#166534';
+      fb.style.border = '1px solid #86efac';
+      fb.innerHTML = '🎉 <strong>Tudo Vinculado com Sucesso!</strong><br>' +
+        '1. Conta Google conectada: <b>' + escapeHtml(userName || userEmail) + '</b><br>' +
+        '2. Google Agenda sincronizada com: <b>' + escapeHtml(userEmail) + '</b><br>' +
+        '3. Planilha criada no seu Google Drive: <a href="' + sheetUrl + '" target="_blank" rel="noopener noreferrer" style="color:#15803d;font-weight:700;text-decoration:underline;">Abrir Planilha no Drive ↗</a><br><br>' +
+        '<div style="background:#ffffff;border:1px solid #86efac;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11.5px;color:#1e3a8a;">' +
+          '⚡ <strong>Último passo para ativação:</strong><br>' +
+          'Para que a planilha salve e leia dados direto do seu app, o Google exige implantar o Apps Script uma única vez:<br>' +
+          '1. <a href="' + sheetUrl + '" target="_blank" rel="noopener noreferrer" style="font-weight:700;text-decoration:underline;color:#2563eb;">Abra sua Planilha</a> e clique em <b>Extensões > Apps Script</b>.<br>' +
+          '2. <button type="button" class="btn ghost small" onclick="copiarCodigoCodeGs()" style="display:inline-flex;padding:2px 8px;font-size:11px;margin:2px 0;">📋 Copiar Código Code.gs</button> e cole lá substituindo tudo.<br>' +
+          '3. Clique em <b>Implantar > Nova Implantação > App da Web</b> (Acesso: Qualquer pessoa) e cole a URL /exec gerada no campo abaixo!' +
+        '</div>';
+    }
+  } else {
+    if(fb){
+      fb.style.background = '#dcfce7';
+      fb.style.color = '#166534';
+      fb.style.border = '1px solid #86efac';
+      fb.innerHTML = '✅ <strong>Google Agenda vinculada com sucesso!</strong> (' + escapeHtml(userEmail) + ')<br>' +
+        'Preencha seu Nome e o Link da Planilha abaixo para concluir.';
+    }
+  }
+}
+
+async function createGoogleSpreadsheetWithHeaders(token){
+  try {
+    var body = {
+      properties: { title: 'FisioFlow — Banco de Dados & Backup' },
+      sheets: [
+        { properties: { title: 'Pacientes', gridProperties: { rowCount: 100, columnCount: 25 } } },
+        { properties: { title: 'Atendimentos', gridProperties: { rowCount: 200, columnCount: 15 } } },
+        { properties: { title: 'Evolucoes', gridProperties: { rowCount: 200, columnCount: 15 } } },
+        { properties: { title: 'Agendamentos', gridProperties: { rowCount: 200, columnCount: 15 } } },
+        { properties: { title: 'Configuracao', gridProperties: { rowCount: 20, columnCount: 5 } } }
+      ]
+    };
+
+    var res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) return null;
+    var data = await res.json();
+    var sId = data.spreadsheetId;
+
+    // Grava cabeçalhos em cada aba
+    var headerPayload = {
+      valueInputOption: 'RAW',
+      data: [
+        {
+          range: 'Pacientes!A1:V1',
+          values: [['Id', 'Nome', 'NomeFantasia', 'OldNome', 'Arquivado', 'Foto', 'Telefone', 'Contato2', 'Endereco', 'Bairro', 'Cidade', 'ValorPadrao', 'FormaPgtoPadrao', 'FreqSemanal', 'TCLE', 'Contrato', 'CpfRg', 'Nascimento', 'DiagnosticoClinico', 'DiagnosticoFuncional', 'ObjetivosTerapeuticos', 'CriadoEm']]
+        },
+        {
+          range: 'Atendimentos!A1:K1',
+          values: [['Id', 'PacienteId', 'PacienteNome', 'Data', 'Hora', 'Valor', 'Status', 'FormaPagamento', 'PagoEm', 'Observacoes', 'CriadoEm']]
+        },
+        {
+          range: 'Evolucoes!A1:J1',
+          values: [['Id', 'PacienteId', 'PacienteNome', 'Data', 'Hora', 'PA', 'FC', 'QueixaEstado', 'Conduta', 'CriadoEm']]
+        },
+        {
+          range: 'Agendamentos!A1:I1',
+          values: [['Id', 'PacienteId', 'PacienteNome', 'Data', 'Hora', 'DuracaoMin', 'Status', 'CalendarEventId', 'CriadoEm']]
+        }
+      ]
+    };
+
+    await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + sId + '/values:batchUpdate', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(headerPayload)
+    });
+
+    return data;
+  } catch(e){
+    console.warn('Erro ao criar planilha via Sheets API:', e);
+    return null;
+  }
+}
+
+async function copiarCodigoCodeGs(){
+  try {
+    var res = await fetch('Code.gs');
+    var codeText = '';
+    if (res.ok) {
+      codeText = await res.text();
+    }
+    if (!codeText) {
+      alert('Por favor, abra o arquivo Code.gs no repositório do FisioFlow e copie seu conteúdo.');
+      return;
+    }
+    await navigator.clipboard.writeText(codeText);
+    alert('✅ Código do Code.gs copiado para sua área de transferência com sucesso! Agora basta colar no editor do Apps Script da sua planilha.');
+  } catch(e) {
+    alert('Para copiar o código, abra o arquivo Code.gs deste repositório.');
+  }
+}
+
 init();
+verificarModoDev();
+contabilizarAcesso('Inicialização do App');
 </script>
 </body>
 </html>
