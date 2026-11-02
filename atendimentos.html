@@ -915,6 +915,17 @@
           <span>Conectar Conta Google e Autoconfigurar</span>
         </button>
         <div id="googleStatusFeedback" style="display:none;padding:10px;border-radius:8px;font-size:12px;line-height:1.45;margin-top:6px;"></div>
+
+        <div style="display:flex;align-items:center;margin:6px 0 2px;">
+          <div style="flex:1;height:1px;background:#cbd5e1;"></div>
+          <span style="padding:0 8px;font-size:11px;color:#64748b;font-weight:700;">OU ENTRE DIRETO</span>
+          <div style="flex:1;height:1px;background:#cbd5e1;"></div>
+        </div>
+
+        <button type="button" class="btn ghost" onclick="ativarModoDemonstracao()" style="width:100%;border:1.5px dashed #4285F4;color:#1e3a8a;font-weight:700;padding:10px 14px;border-radius:12px;background:#ffffff;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 6px rgba(66,133,244,0.06);">
+          <span>✨ Testar Agora (Modo Demonstração sem Planilha)</span>
+        </button>
+        <div style="font-size:11px;color:#64748b;text-align:center;">Salva tudo no seu celular/computador. Você pode conectar sua planilha a qualquer momento nas Configurações ⚙️.</div>
       </div>
     </div>
 
@@ -988,6 +999,12 @@
     </header>
 
     <div id="errorBanner" class="error-banner hidden"></div>
+
+    <!-- Banner Modo Demonstração -->
+    <div id="demoModeBanner" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:#92400e;display:none;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+      <div>✨ <b>Modo Demonstração Ativo</b>: Dados salvos localmente no seu aparelho.</div>
+      <button type="button" class="btn ghost small" onclick="openSettings()" style="padding:2px 8px;font-size:11px;background:#ffffff;color:#b45309;border-color:#fde68a;">Vincular Planilha ⚙️</button>
+    </div>
 
     <!-- 4 ABAS PRINCIPAIS -->
     <nav class="main-tabs" role="tablist" aria-label="Navegação principal">
@@ -1677,11 +1694,249 @@ function clearError(){
   if(b){ b.textContent = ''; b.classList.add('hidden'); }
 }
 
+/* ============================================================
+   MODO DEMONSTRAÇÃO (SEM PLANILHA / OFFLINE LOCAL)
+   ============================================================ */
+function seedDemoDataIfEmpty(){
+  if(localStorage.getItem('ft_demo_seeded')) return;
+  var todayIso = new Date().toISOString().substring(0, 10);
+  var demoPatients = [
+    {
+      id: 'p_demo_1',
+      nome: 'Diva Ferreira dos Santos',
+      nomeFantasia: 'Dona Diva',
+      oldNome: '',
+      telefone: '(11) 98888-1111',
+      contato02: '',
+      endereco: 'Rua das Palmeiras, 120',
+      bairro: 'Jardins',
+      cidade: 'São Paulo',
+      dataNascimento: '1952-05-14',
+      documento: '123.456.789-00',
+      valorPadrao: 150,
+      formaPagamento: 'Pix',
+      frequenciaSemanal: '2x por semana',
+      tcle: 'Sim',
+      contrato: 'Sim',
+      diagClinico: 'M54.5 - Dor lombar baixa',
+      diagFuncional: 'Lombalgia mecânico-postural com encurtamento posterior',
+      objetivos: 'Alívio álgico, mobilidade articular e fortalecimento do core.',
+      arquivado: 'Não',
+      foto: '',
+      criadoEm: new Date().toISOString()
+    },
+    {
+      id: 'p_demo_2',
+      nome: 'João Carlos da Silva',
+      nomeFantasia: 'Seu João',
+      oldNome: '',
+      telefone: '(11) 97777-2222',
+      contato02: '',
+      endereco: 'Av. Paulista, 1500',
+      bairro: 'Bela Vista',
+      cidade: 'São Paulo',
+      dataNascimento: '1960-11-20',
+      documento: '987.654.321-99',
+      valorPadrao: 160,
+      formaPagamento: 'Pix',
+      frequenciaSemanal: '3x por semana',
+      tcle: 'Sim',
+      contrato: 'Sim',
+      diagClinico: 'M17.0 - Gonartrose primária bilateral',
+      diagFuncional: 'Fraqueza de quadríceps bilateral e dor ao descer escadas',
+      objetivos: 'Ganho de ADM de joelho, propriocepção e treino de marcha.',
+      arquivado: 'Não',
+      foto: '',
+      criadoEm: new Date().toISOString()
+    }
+  ];
+
+  var demoEntries = [
+    {
+      id: 'e_demo_1',
+      nome: 'Dona Diva',
+      data: todayIso,
+      hora: '09:00',
+      valor: 150,
+      status: 'Pendente',
+      paymentDate: '',
+      lat: '',
+      lng: ''
+    },
+    {
+      id: 'e_demo_2',
+      nome: 'Seu João',
+      data: todayIso,
+      hora: '14:30',
+      valor: 160,
+      status: 'Recebido',
+      paymentDate: todayIso,
+      lat: '',
+      lng: ''
+    }
+  ];
+
+  var demoEvolutions = [
+    {
+      id: 'ev_demo_1',
+      pacienteId: 'p_demo_1',
+      pacienteNome: 'Dona Diva',
+      data: todayIso,
+      hora: '09:50',
+      pa: '120/80',
+      fc: '72',
+      estadoClinico: 'Paciente relata alívio importante das dores lombares (EVA 2/10). Boa disposição geral.',
+      condutas: 'Mobilização lombar, exercícios de ponte e prancha modificada. Alongamento de isquiotibiais.',
+      criadoEm: new Date().toISOString()
+    }
+  ];
+
+  var demoSchedules = [
+    {
+      id: 'sc_demo_1',
+      pacienteId: 'p_demo_1',
+      pacienteNome: 'Dona Diva',
+      data: todayIso,
+      hora: '09:00',
+      duracaoMin: 50,
+      valor: 150,
+      status: 'Agendado',
+      observacao: 'Sessão domiciliar matutina',
+      calendarEventId: '',
+      calendarId: 'primary',
+      atendimentoId: 'e_demo_1',
+      criadoEm: new Date().toISOString()
+    },
+    {
+      id: 'sc_demo_2',
+      pacienteId: 'p_demo_2',
+      pacienteNome: 'Seu João',
+      data: todayIso,
+      hora: '14:30',
+      duracaoMin: 50,
+      valor: 160,
+      status: 'Agendado',
+      observacao: 'Foco em fortalecimento de joelho',
+      calendarEventId: '',
+      calendarId: 'primary',
+      atendimentoId: 'e_demo_2',
+      criadoEm: new Date().toISOString()
+    }
+  ];
+
+  try {
+    localStorage.setItem('ft_demo_patients', JSON.stringify(demoPatients));
+    localStorage.setItem('ft_demo_entries', JSON.stringify(demoEntries));
+    localStorage.setItem('ft_demo_evos', JSON.stringify(demoEvolutions));
+    localStorage.setItem('ft_demo_scheds', JSON.stringify(demoSchedules));
+    localStorage.setItem('ft_demo_seeded', '1');
+  } catch(e){}
+}
+
+function loadDemoData(){
+  seedDemoDataIfEmpty();
+  try {
+    patients = JSON.parse(localStorage.getItem('ft_demo_patients') || '[]');
+    entries = JSON.parse(localStorage.getItem('ft_demo_entries') || '[]');
+    evolutions = JSON.parse(localStorage.getItem('ft_demo_evos') || '[]');
+    schedules = JSON.parse(localStorage.getItem('ft_demo_scheds') || '[]');
+  } catch(e){
+    patients = []; entries = []; evolutions = []; schedules = [];
+  }
+  reconcileSchedulesWithEntries();
+  populatePatientFilter();
+  populateEvolutionsFilters();
+  populateAgendaFilters();
+  renderPatientsTab();
+  renderAgendaTab();
+  renderEvolutionsTab();
+  renderList();
+  if(typeof renderFinanceiroTab === 'function') renderFinanceiroTab();
+}
+
+function handleDemoPostAction(payload){
+  var act = payload.action;
+  if(act === 'save_patient' || act === 'add_patient'){
+    var idx = patients.findIndex(function(x){ return x.id === payload.id; });
+    if(idx >= 0) patients[idx] = Object.assign({}, patients[idx], payload);
+    else patients.push(payload);
+    try { localStorage.setItem('ft_demo_patients', JSON.stringify(patients)); } catch(e){}
+  } else if(act === 'update_patient'){
+    var idx = patients.findIndex(function(x){ return x.id === payload.id; });
+    if(idx >= 0){
+      patients[idx] = Object.assign({}, patients[idx], payload);
+      try { localStorage.setItem('ft_demo_patients', JSON.stringify(patients)); } catch(e){}
+    }
+  } else if(act === 'archive_patient'){
+    var idx = patients.findIndex(function(x){ return x.id === payload.id; });
+    if(idx >= 0){
+      patients[idx].arquivado = payload.arquivado || 'Sim';
+      try { localStorage.setItem('ft_demo_patients', JSON.stringify(patients)); } catch(e){}
+    }
+  } else if(act === 'add_entry'){
+    entries.push(payload);
+    try { localStorage.setItem('ft_demo_entries', JSON.stringify(entries)); } catch(e){}
+  } else if(act === 'update_entry'){
+    var idx = entries.findIndex(function(x){ return x.id === payload.id; });
+    if(idx >= 0){
+      entries[idx] = Object.assign({}, entries[idx], payload);
+      try { localStorage.setItem('ft_demo_entries', JSON.stringify(entries)); } catch(e){}
+    }
+  } else if(act === 'delete_entry'){
+    entries = entries.filter(function(x){ return x.id !== payload.id; });
+    try { localStorage.setItem('ft_demo_entries', JSON.stringify(entries)); } catch(e){}
+  } else if(act === 'save_evolution'){
+    var idx = evolutions.findIndex(function(x){ return x.id === payload.id; });
+    if(idx >= 0) evolutions[idx] = Object.assign({}, evolutions[idx], payload);
+    else evolutions.push(payload);
+    try { localStorage.setItem('ft_demo_evos', JSON.stringify(evolutions)); } catch(e){}
+  } else if(act === 'save_schedule'){
+    var idx = schedules.findIndex(function(x){ return x.id === payload.id; });
+    if(idx >= 0) schedules[idx] = Object.assign({}, schedules[idx], payload);
+    else schedules.push(payload);
+    try { localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+  } else if(act === 'delete_schedule'){
+    schedules = schedules.filter(function(x){ return x.id !== payload.id; });
+    try { localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+  }
+  return { success: true, handled: true, id: payload.id || 'demo_' + Date.now() };
+}
+
+function ativarModoDemonstracao(){
+  var demoConfig = {
+    scriptUrl: 'demo',
+    providerName: 'Dra. Fisioterapeuta',
+    providerDoc: 'CREFITO-3/123456-F',
+    providerContact: '(11) 98765-4321',
+    calendarId: 'primary'
+  };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(demoConfig));
+  localStorage.setItem('ft_calendar_id', 'primary');
+  config = demoConfig;
+
+  seedDemoDataIfEmpty();
+
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('mainScreen').classList.remove('hidden');
+  document.getElementById('fab').classList.remove('hidden');
+  var pName = document.getElementById('providerNameDisplay');
+  if(pName) pName.textContent = config.providerName;
+  var demoBanner = document.getElementById('demoModeBanner');
+  if(demoBanner) demoBanner.style.display = 'flex';
+  updateMonthLabel();
+  switchMainTab('pacientes');
+  loadData();
+  showToast('✨ Modo Demonstração ativado! Dados salvos localmente.', 'ok');
+}
+
 /* ---------- Rede & Apps Script ---------- */
 function scriptUrl(){
   return (config && config.scriptUrl) || SCRIPT_URL;
 }
 async function postAction(payload){
+  if(scriptUrl() === 'demo'){
+    return Promise.resolve(handleDemoPostAction(payload));
+  }
   var res = await fetch(scriptUrl(), {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1712,6 +1967,11 @@ async function postAction(payload){
 async function loadData(){
   document.getElementById('loadingState').classList.remove('hidden');
   clearError();
+  if(scriptUrl() === 'demo'){
+    loadDemoData();
+    document.getElementById('loadingState').classList.add('hidden');
+    return;
+  }
   try{
     var res = await fetch(scriptUrl(), { method: 'GET' });
     if(!res.ok) throw new Error('HTTP ' + res.status);
@@ -7851,8 +8111,8 @@ async function saveSetup(){
   if(!scriptUrlVal && config && config.scriptUrl) scriptUrlVal = config.scriptUrl;
   if(!scriptUrlVal && SCRIPT_URL) scriptUrlVal = SCRIPT_URL;
 
-  if(!scriptUrlVal || scriptUrlVal.indexOf('/exec') === -1){
-    errEl.textContent = 'Informe o link do Apps Script (terminado em /exec).';
+  if(!scriptUrlVal || (scriptUrlVal.indexOf('/exec') === -1 && scriptUrlVal !== 'demo')){
+    errEl.innerHTML = 'Informe o link do Apps Script (terminado em /exec) ou clique em <a href="javascript:void(0)" onclick="ativarModoDemonstracao()" style="color:var(--primary);font-weight:700;text-decoration:underline;">Testar no Modo Demonstração</a>.';
     errEl.classList.remove('hidden');
     return;
   }
@@ -7866,6 +8126,8 @@ async function saveSetup(){
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     localStorage.setItem('ft_calendar_id', calendarIdVal);
     config = newConfig;
+    var demoBanner = document.getElementById('demoModeBanner');
+    if(demoBanner) demoBanner.style.display = (scriptUrlVal === 'demo') ? 'flex' : 'none';
   }catch(e){
     errEl.textContent = 'Não foi possível salvar localmente.';
     errEl.classList.remove('hidden');
@@ -8109,7 +8371,7 @@ async function init(){
   var savedTab = 'pacientes';
   try{ savedTab = localStorage.getItem('active_tab') || 'pacientes'; }catch(e){}
 
-  var hasUrl = (config && config.scriptUrl && config.scriptUrl.indexOf('/exec') > -1) || (SCRIPT_URL && SCRIPT_URL.indexOf('/exec') > -1);
+  var hasUrl = (config && config.scriptUrl && (config.scriptUrl.indexOf('/exec') > -1 || config.scriptUrl === 'demo')) || (SCRIPT_URL && SCRIPT_URL.indexOf('/exec') > -1);
   if(!config || !config.providerName || !hasUrl){
     if(document.getElementById('scriptUrlInput') && SCRIPT_URL){
       document.getElementById('scriptUrlInput').value = SCRIPT_URL;
@@ -8122,6 +8384,8 @@ async function init(){
     document.getElementById('mainScreen').classList.remove('hidden');
     document.getElementById('fab').classList.remove('hidden');
     document.getElementById('providerNameDisplay').textContent = config.providerName || 'Atendimentos';
+    var demoBanner = document.getElementById('demoModeBanner');
+    if(demoBanner) demoBanner.style.display = (config.scriptUrl === 'demo') ? 'flex' : 'none';
     updateMonthLabel();
     switchMainTab(savedTab);
     await loadData();
@@ -8550,18 +8814,37 @@ var _googleAccessToken = null;
 
 async function handleGoogleOneClickOnboarding(){
   var fb = document.getElementById('googleStatusFeedback');
+  var btn = document.getElementById('btnGoogleAuthOnboarding');
+  if(btn) btn.disabled = true;
+
   if(fb){
     fb.style.display = 'block';
     fb.style.background = '#e0f2fe';
     fb.style.color = '#0369a1';
     fb.style.border = '1px solid #7dd3fc';
-    fb.innerHTML = '⏳ Conectando ao Google... Por favor, autorize o acesso na janela que se abrir.';
+    fb.innerHTML = '⏳ Conectando ao Google... Autorize na janela pop-up que se abrir.<br><small style="color:#0284c7;">Se a janela não aparecer ou fechar, você pode prosseguir normalmente pelo formulário abaixo ou Modo Demonstração.</small>';
   }
 
   var clientId = obterGoogleClientId();
 
+  // Watchdog timer: evita travar a interface se o pop-up for bloqueado ou fechado sem resposta
+  var watchdogTimer = setTimeout(function(){
+    if(btn) btn.disabled = false;
+    if(fb && fb.innerHTML.indexOf('Conectando') > -1){
+      fb.style.background = '#fffbeb';
+      fb.style.color = '#92400e';
+      fb.style.border = '1px solid #fde68a';
+      fb.innerHTML = '⚠️ <b>A janela do Google não concluiu a conexão</b> (o pop-up pode ter sido bloqueado pelo navegador ou rejeitado pela conta).<br><br>' +
+        '👉 <b>Como você deseja prosseguir?</b><br>' +
+        '• <button type="button" class="btn ghost small" onclick="ativarModoDemonstracao()" style="background:#ffffff;color:#1e3a8a;font-weight:700;margin:4px 0;padding:3px 10px;">✨ Entrar no Modo Demonstração</button> (Use o app agora mesmo sem planilha!)<br>' +
+        '• Ou preencha seu Nome e link da Planilha no formulário logo abaixo.';
+    }
+  }, 7000);
+
   // Verifica se o SDK do Google Identity Services carregou
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    clearTimeout(watchdogTimer);
+    if(btn) btn.disabled = false;
     var emailManual = prompt('Digite seu e-mail do Google (Gmail) para vincular à sua Google Agenda e Planilha:');
     if (emailManual && emailManual.indexOf('@') > -1) {
       document.getElementById('calendarIdInput').value = emailManual.trim();
@@ -8580,13 +8863,26 @@ async function handleGoogleOneClickOnboarding(){
     var tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
+      error_callback: function(nonOAuthErr){
+        clearTimeout(watchdogTimer);
+        if(btn) btn.disabled = false;
+        if(fb){
+          fb.style.background = '#fffbeb';
+          fb.style.color = '#92400e';
+          fb.style.border = '1px solid #fde68a';
+          fb.innerHTML = '⚠️ <b>Pop-up do Google não concluído (' + escapeHtml(nonOAuthErr.type || 'fechado') + ').</b><br>' +
+            'Você pode preencher o formulário abaixo diretamente ou clicar em <a href="javascript:void(0)" onclick="ativarModoDemonstracao()" style="font-weight:700;color:#1e3a8a;text-decoration:underline;">✨ Entrar no Modo Demonstração</a>.';
+        }
+      },
       callback: async function(resp){
+        clearTimeout(watchdogTimer);
+        if(btn) btn.disabled = false;
         if (resp.error) {
           if(fb){
             fb.style.background = '#fff1f2';
             fb.style.color = '#9f1239';
             fb.style.border = '1px solid #fda4af';
-            fb.innerHTML = '⚠️ Não foi possível autenticar via Google (' + escapeHtml(resp.error) + '). Você pode preencher seus dados manualmente abaixo sem problemas.';
+            fb.innerHTML = '⚠️ Não foi possível autenticar via Google (' + escapeHtml(resp.error) + '). Você pode preencher seus dados manualmente abaixo sem problemas, ou usar o Modo Demonstração.';
           }
           return;
         }
@@ -8597,11 +8893,13 @@ async function handleGoogleOneClickOnboarding(){
 
     tokenClient.requestAccessToken({ prompt: 'consent' });
   } catch(err) {
+    clearTimeout(watchdogTimer);
+    if(btn) btn.disabled = false;
     if(fb){
       fb.style.background = '#fff1f2';
       fb.style.color = '#9f1239';
       fb.style.border = '1px solid #fda4af';
-      fb.innerHTML = '⚠️ ' + escapeHtml(err.message) + '<br>Você pode preencher o formulário manualmente abaixo.';
+      fb.innerHTML = '⚠️ ' + escapeHtml(err.message) + '<br>Você pode preencher o formulário manualmente abaixo ou testar no Modo Demonstração.';
     }
   }
 }
