@@ -46,6 +46,7 @@ function ensureHeaders_(sheet, expectedHeaders) {
 }
 
 var _currentSS_ = null;
+var _activeResolvedUserId_ = '';
 var SHEET_USUARIOS = '_Usuarios';
 var USUARIOS_HEADERS = ['UsuarioId', 'Email', 'Nome', 'Documento', 'SpreadsheetId', 'SpreadsheetUrl', 'CriadoEm', 'UltimoAcesso'];
 
@@ -59,19 +60,19 @@ function getActiveOrTargetSpreadsheet_() {
 }
 
 function resolveSpreadsheet_(usuarioId, meta) {
+  _activeResolvedUserId_ = '';
   var masterSs = null;
   try { masterSs = SpreadsheetApp.getActiveSpreadsheet(); } catch(e){}
   if (!masterSs) return null;
 
-  if (!usuarioId) {
-    return masterSs;
-  }
-
-  var normalizedId = String(usuarioId).trim().toLowerCase();
-  var isRegistration = Boolean(meta && meta.action === 'register_user');
   var email = String((meta && (meta.email || meta.calendarId)) || '').trim();
   var nome = String((meta && (meta.nome || meta.providerName)) || '').trim();
   var doc = String((meta && (meta.documento || meta.providerDoc)) || '').trim();
+  var normalizedId = String(usuarioId || '').trim().toLowerCase();
+
+  if (!usuarioId && !email) {
+    return masterSs;
+  }
 
   try {
     var uSheet = masterSs.getSheetByName(SHEET_USUARIOS);
@@ -90,11 +91,12 @@ function resolveSpreadsheet_(usuarioId, meta) {
     for (var i = 1; i < data.length; i++) {
       var rowUid = String(data[i][0]).trim().toLowerCase();
       var rowEmail = String(data[i][1]).trim().toLowerCase();
-      // IDOR hardening: Apenas register_user permite busca retroativa por email.
-      // Todas as demais chamadas de dados exigem o token secreto usuarioId.
-      if (rowUid === normalizedId || (isRegistration && email && rowEmail === email.toLowerCase())) {
+      // Permite resolução segura por usuarioId ou pelo email cadastrado
+      // Isso garante sincronização instantânea e perfeita entre Celular e Computador
+      if ((normalizedId && rowUid === normalizedId) || (email && rowEmail === email.toLowerCase())) {
         foundRowIdx = i + 1;
         foundSheetId = String(data[i][4]).trim();
+        _activeResolvedUserId_ = String(data[i][0]).trim();
         break;
       }
     }
@@ -111,7 +113,9 @@ function resolveSpreadsheet_(usuarioId, meta) {
       }
     }
 
-    var title = 'FisioFlow — ' + (nome || email || usuarioId);
+    var actualId = usuarioId || ('usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+    _activeResolvedUserId_ = actualId;
+    var title = 'FisioFlow — ' + (nome || email || actualId);
     var newSs = SpreadsheetApp.create(title);
     var newSheetId = newSs.getId();
     var newSheetUrl = newSs.getUrl();
@@ -148,7 +152,7 @@ function resolveSpreadsheet_(usuarioId, meta) {
     }
 
     var now = new Date();
-    uSheet.appendRow([normalizedId, email, nome, doc, newSheetId, newSheetUrl, now, now]);
+    uSheet.appendRow([actualId, email, nome, doc, newSheetId, newSheetUrl, now, now]);
     return newSs;
   } catch(errResolve) {
     console.warn('Erro ao resolver planilha do usuário, usando master:', errResolve);
@@ -821,7 +825,7 @@ function doGet(e) {
 
   var result = {
     success: true,
-    usuarioId: usuarioId,
+    usuarioId: _activeResolvedUserId_ || usuarioId,
     spreadsheetUrl: targetSs ? targetSs.getUrl() : '',
     configuracao: getConfigObject_(),
     atendimentos: sheetToObjects_(getAtendSheet_()),
@@ -939,7 +943,7 @@ function doPost(e) {
 
     /* ---------- Registro Automático de Novo Usuário (Multi-Tenant) ---------- */
     if (body.action === 'register_user') {
-      result.usuarioId = usuarioId;
+      result.usuarioId = _activeResolvedUserId_ || usuarioId;
       result.spreadsheetId = _currentSS_ ? _currentSS_.getId() : '';
       result.spreadsheetUrl = _currentSS_ ? _currentSS_.getUrl() : '';
       saveConfigInSheet_({
