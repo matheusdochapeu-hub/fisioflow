@@ -13,9 +13,9 @@ Execute in the order below unless dependencies say otherwise. Each executor mode
 | [003](003-codegs-concurrency-locking.md) | Implement Concurrency Locking & Cascade Deletion in `Code.gs` | P1 | S | 001 | DONE |
 | [004](004-bulk-import-and-eliminate-n-plus-one.md) | Bulk Import Endpoint in `Code.gs` & Elimination of N+1 Loop | P1 | S | 001, 003 | DONE |
 | [005](005-protect-script-url-and-credentials.md) | Remove Hardcoded Script URL & Protect Setup Configuration | P2 | S | 001 | DONE |
-| [006](006-secure-idor-email-lookup-codegs.md) | Secure IDOR Email Lookup in `resolveSpreadsheet_` (`Code.gs`) | P1 | S | 001 | TODO |
-| [007](007-cleanup-dead-code-codegs.md) | Cleanup Dead Code and Duplicate Handlers in `Code.gs` | P1 | S | 001 | TODO |
-| [008](008-resilient-quick-checkin-mutation-handling.md) | Resilient Quick Check-in & Evolution Mutation Handling | P1 | S | 001, 002 | TODO |
+| [006](006-secure-idor-email-lookup-codegs.md) | Secure IDOR Email Lookup in `resolveSpreadsheet_` (`Code.gs`) | P1 | S | 001 | DONE |
+| [007](007-cleanup-dead-code-codegs.md) | Cleanup Dead Code and Duplicate Handlers in `Code.gs` | P1 | S | 001 | DONE |
+| [008](008-resilient-quick-checkin-mutation-handling.md) | Resilient Quick Check-in & Evolution Mutation Handling | P1 | S | 001, 002 | DONE |
 | [009](009-modularize-helpers-for-stable-unit-tests.md) | Modularize Shared Helpers for Clean Unit Testing | P2 | S | 001 | TODO |
 | [010](010-network-first-service-worker-app-shell.md) | Network-First App Shell & Update Listener in Service Worker | P2 | S | 001 | DONE |
 

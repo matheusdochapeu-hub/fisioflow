@@ -68,7 +68,8 @@ function resolveSpreadsheet_(usuarioId, meta) {
   }
 
   var normalizedId = String(usuarioId).trim().toLowerCase();
-  var email = String((meta && (meta.email || meta.calendarId)) || (normalizedId.indexOf('@') > -1 ? normalizedId : '')).trim();
+  var isRegistration = Boolean(meta && meta.action === 'register_user');
+  var email = String((meta && (meta.email || meta.calendarId)) || '').trim();
   var nome = String((meta && (meta.nome || meta.providerName)) || '').trim();
   var doc = String((meta && (meta.documento || meta.providerDoc)) || '').trim();
 
@@ -89,7 +90,9 @@ function resolveSpreadsheet_(usuarioId, meta) {
     for (var i = 1; i < data.length; i++) {
       var rowUid = String(data[i][0]).trim().toLowerCase();
       var rowEmail = String(data[i][1]).trim().toLowerCase();
-      if ((rowUid && rowUid === normalizedId) || (email && rowEmail && rowEmail === email.toLowerCase())) {
+      // IDOR hardening: Apenas register_user permite busca retroativa por email.
+      // Todas as demais chamadas de dados exigem o token secreto usuarioId.
+      if (rowUid === normalizedId || (isRegistration && email && rowEmail === email.toLowerCase())) {
         foundRowIdx = i + 1;
         foundSheetId = String(data[i][4]).trim();
         break;
@@ -564,7 +567,7 @@ function deleteCalendarEventForSchedule_(eventId, calendarId) {
 }
 
 function doGet(e) {
-  var usuarioId = (e && e.parameter && (e.parameter.usuarioId || e.parameter.email)) || '';
+  var usuarioId = (e && e.parameter && e.parameter.usuarioId) || '';
   var targetSs = resolveSpreadsheet_(usuarioId, (e && e.parameter) || {});
   _currentSS_ = targetSs;
 
@@ -796,20 +799,6 @@ function doPost(e) {
       deleteRowsByField_(getAgendSheet_(), 1, body.id);
 
     /* ---------- Agendamentos & Google Agenda (CalendarApp) ---------- */
-    } else if (body.action === 'test_calendar') {
-      var resolvedTest = resolveUserCalendar_(body.calendarId);
-      if (!resolvedTest.cal) {
-        result.success = false;
-        result.error = 'Não foi possível acessar o Google Agenda. Autorize o CalendarApp no editor do Apps Script executando a função autorizarGoogleAgenda.';
-      } else {
-        result.calendarName = resolvedTest.cal.getName();
-        result.mode = resolvedTest.guestEmail ? 'invite' : 'direct';
-        result.calendarId = resolvedTest.calendarId;
-        result.message = resolvedTest.guestEmail
-          ? ('Conectado! Os eventos serão criados e enviados com convite direto para ' + resolvedTest.guestEmail)
-          : ('Conectado diretamente à agenda "' + (resolvedTest.cal.getName() || 'Principal') + '" (' + resolvedTest.calendarId + ')');
-      }
-
     } else if (body.action === 'create_schedule') {
       var calRes = createCalendarEventForSchedule_(body);
       var evId = calRes.eventId || '';
@@ -914,41 +903,6 @@ function doPost(e) {
         deleteCalendarEventForSchedule_(evIdToDel, calIdToDel);
       }
       deleteRowById_(sAgDel, body.id);
-
-    } else if (body.action === 'calc_routes_batch') {
-      var pairs = Array.isArray(body.pairs) ? body.pairs : [];
-      var routesOut = {};
-      for (var rIdx = 0; rIdx < pairs.length; rIdx++) {
-        var pair = pairs[rIdx];
-        if (!pair || !pair.key || !pair.origin || !pair.destination) continue;
-        try {
-          var finder = Maps.newDirectionFinder()
-            .setLanguage('pt-BR')
-            .setOrigin(String(pair.origin))
-            .setDestination(String(pair.destination))
-            .setMode(Maps.DirectionFinder.Mode.DRIVING);
-          var dirs = finder.getDirections();
-          if (dirs && dirs.routes && dirs.routes.length > 0 && dirs.routes[0].legs && dirs.routes[0].legs.length > 0) {
-            var leg = dirs.routes[0].legs[0];
-            var distMeters = (leg.distance && typeof leg.distance.value === 'number') ? leg.distance.value : 0;
-            var durSeconds = (leg.duration && typeof leg.duration.value === 'number') ? leg.duration.value : 0;
-            routesOut[pair.key] = {
-              ok: true,
-              distanceKm: Math.round((distMeters / 1000) * 10) / 10,
-              durationMin: Math.max(1, Math.round(durSeconds / 60)),
-              distanceText: (leg.distance && leg.distance.text) || '',
-              durationText: (leg.duration && leg.duration.text) || '',
-              startAddress: leg.start_address || pair.origin,
-              endAddress: leg.end_address || pair.destination
-            };
-          } else {
-            routesOut[pair.key] = { ok: false, error: 'Rota não encontrada' };
-          }
-        } catch (mapErr) {
-          routesOut[pair.key] = { ok: false, error: mapErr.message || String(mapErr) };
-        }
-      }
-      result.routes = routesOut;
 
     /* ---------- Evoluções Clínicas ---------- */
     } else if (body.action === 'create_evolution') {

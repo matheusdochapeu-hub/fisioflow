@@ -1412,7 +1412,7 @@ function getCentralScriptUrl(){
   if(config && config.scriptUrl && config.scriptUrl.indexOf('/exec') > -1){
     return config.scriptUrl;
   }
-  var custom = (localStorage.getItem('ft_custom_script_url') || '').trim();
+  var custom = (localStorage.getItem('ff_custom_script_url') || '').trim();
   if(custom) return custom;
   if(SCRIPT_URL && SCRIPT_URL.trim()) return SCRIPT_URL.trim();
   return DEFAULT_CENTRAL_SCRIPT_URL;
@@ -1420,16 +1420,16 @@ function getCentralScriptUrl(){
 
 function getActiveUsuarioId(){
   if(config && config.usuarioId) return config.usuarioId;
-  return localStorage.getItem('ft_usuario_id') || '';
+  return localStorage.getItem('ff_usuario_id') || '';
 }
 var DEFAULT_CALENDAR_ID = 'primary';
 var DEFAULT_HOME_ADDRESS = '';
 var DEFAULT_CAR_KM_PER_LITER = 12;
 var DEFAULT_GAS_PRICE = 5.80;
 var DEFAULT_CITY_FALLBACK = '';
-var ROUTE_CACHE_KEY = 'ft_route_cache_v1';
+var ROUTE_CACHE_KEY = 'ff_route_cache_v1';
 
-var CONFIG_KEY = 'config';
+var CONFIG_KEY = 'ff_config';
 var config = null;
 var entries = [];
 var patients = [];
@@ -1628,7 +1628,7 @@ function compressPatientPhoto(file, callback){
 /* ============================================================
    BANCO DE DADOS LOCAL (IndexedDB) PARA EXAMES & DOCUMENTOS
    ============================================================ */
-var DB_NAME = 'ft_docs_db';
+var DB_NAME = 'ff_docs_db';
 var DB_VERSION = 1;
 
 function getDb(){
@@ -1694,7 +1694,7 @@ async function dbGetFileById(id){
 /* ---------- Controle de Abas ---------- */
 function switchMainTab(tab){
   currentTab = tab;
-  try { localStorage.setItem('active_tab', tab); } catch(e){}
+  try { localStorage.setItem('ff_active_tab', tab); } catch(e){}
   var tabs = ['pacientes', 'agenda', 'evolucoes', 'financeiro'];
   tabs.forEach(function(t){
     var btn = document.getElementById('tabBtn' + capitalize(t));
@@ -1762,7 +1762,7 @@ function isFinancialsHidden(){
 function toggleHideFinancials(){
   var hidden = isFinancialsHidden();
   sessionStorage.setItem('show_financials', hidden ? 'true' : 'false');
-  localStorage.setItem('hide_financials', hidden ? 'false' : 'true');
+  localStorage.setItem('ff_hide_financials', hidden ? 'false' : 'true');
   updateEyeButtonUI();
   renderList();
   renderAgendaTab();
@@ -1850,7 +1850,7 @@ function clearError(){
    MODO DEMONSTRAÇÃO (SEM PLANILHA / OFFLINE LOCAL)
    ============================================================ */
 function seedDemoDataIfEmpty(){
-  if(localStorage.getItem('ft_demo_seeded')) return;
+  if(localStorage.getItem('ff_demo_seeded')) return;
   var todayIso = new Date().toISOString().substring(0, 10);
   var demoPatients = [
     {
@@ -1977,21 +1977,21 @@ function seedDemoDataIfEmpty(){
   ];
 
   try {
-    localStorage.setItem('ft_demo_patients', JSON.stringify(demoPatients));
-    localStorage.setItem('ft_demo_entries', JSON.stringify(demoEntries));
-    localStorage.setItem('ft_demo_evos', JSON.stringify(demoEvolutions));
-    localStorage.setItem('ft_demo_scheds', JSON.stringify(demoSchedules));
-    localStorage.setItem('ft_demo_seeded', '1');
+    localStorage.setItem('ff_demo_patients', JSON.stringify(demoPatients));
+    localStorage.setItem('ff_demo_entries', JSON.stringify(demoEntries));
+    localStorage.setItem('ff_demo_evos', JSON.stringify(demoEvolutions));
+    localStorage.setItem('ff_demo_scheds', JSON.stringify(demoSchedules));
+    localStorage.setItem('ff_demo_seeded', '1');
   } catch(e){}
 }
 
 function loadDemoData(){
   seedDemoDataIfEmpty();
   try {
-    patients = JSON.parse(localStorage.getItem('ft_demo_patients') || '[]');
-    entries = JSON.parse(localStorage.getItem('ft_demo_entries') || '[]');
-    evolutions = JSON.parse(localStorage.getItem('ft_demo_evos') || '[]');
-    schedules = JSON.parse(localStorage.getItem('ft_demo_scheds') || '[]');
+    patients = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
+    entries = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
+    evolutions = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
+    schedules = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
   } catch(e){
     patients = []; entries = []; evolutions = []; schedules = [];
   }
@@ -2012,44 +2012,44 @@ function handleDemoPostAction(payload){
     var idx = patients.findIndex(function(x){ return x.id === payload.id; });
     if(idx >= 0) patients[idx] = Object.assign({}, patients[idx], payload);
     else patients.push(payload);
-    try { localStorage.setItem('ft_demo_patients', JSON.stringify(patients)); } catch(e){}
+    try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
   } else if(act === 'update_patient'){
     var idx = patients.findIndex(function(x){ return x.id === payload.id; });
     if(idx >= 0){
       patients[idx] = Object.assign({}, patients[idx], payload);
-      try { localStorage.setItem('ft_demo_patients', JSON.stringify(patients)); } catch(e){}
+      try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
     }
   } else if(act === 'archive_patient'){
     var idx = patients.findIndex(function(x){ return x.id === payload.id; });
     if(idx >= 0){
       patients[idx].arquivado = payload.arquivado || 'Sim';
-      try { localStorage.setItem('ft_demo_patients', JSON.stringify(patients)); } catch(e){}
+      try { localStorage.setItem('ff_demo_patients', JSON.stringify(patients)); } catch(e){}
     }
   } else if(act === 'add_entry'){
     entries.push(payload);
-    try { localStorage.setItem('ft_demo_entries', JSON.stringify(entries)); } catch(e){}
+    try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
   } else if(act === 'update_entry'){
     var idx = entries.findIndex(function(x){ return x.id === payload.id; });
     if(idx >= 0){
       entries[idx] = Object.assign({}, entries[idx], payload);
-      try { localStorage.setItem('ft_demo_entries', JSON.stringify(entries)); } catch(e){}
+      try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
     }
   } else if(act === 'delete_entry'){
     entries = entries.filter(function(x){ return x.id !== payload.id; });
-    try { localStorage.setItem('ft_demo_entries', JSON.stringify(entries)); } catch(e){}
+    try { localStorage.setItem('ff_demo_entries', JSON.stringify(entries)); } catch(e){}
   } else if(act === 'save_evolution'){
     var idx = evolutions.findIndex(function(x){ return x.id === payload.id; });
     if(idx >= 0) evolutions[idx] = Object.assign({}, evolutions[idx], payload);
     else evolutions.push(payload);
-    try { localStorage.setItem('ft_demo_evos', JSON.stringify(evolutions)); } catch(e){}
+    try { localStorage.setItem('ff_demo_evos', JSON.stringify(evolutions)); } catch(e){}
   } else if(act === 'save_schedule'){
     var idx = schedules.findIndex(function(x){ return x.id === payload.id; });
     if(idx >= 0) schedules[idx] = Object.assign({}, schedules[idx], payload);
     else schedules.push(payload);
-    try { localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+    try { localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules)); } catch(e){}
   } else if(act === 'delete_schedule'){
     schedules = schedules.filter(function(x){ return x.id !== payload.id; });
-    try { localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules)); } catch(e){}
+    try { localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules)); } catch(e){}
   }
   return { success: true, handled: true, id: payload.id || 'demo_' + Date.now() };
 }
@@ -2063,7 +2063,7 @@ function ativarModoDemonstracao(){
     calendarId: 'primary'
   };
   localStorage.setItem(CONFIG_KEY, JSON.stringify(demoConfig));
-  localStorage.setItem('ft_calendar_id', 'primary');
+  localStorage.setItem('ff_calendar_id', 'primary');
   config = demoConfig;
 
   seedDemoDataIfEmpty();
@@ -2082,12 +2082,12 @@ function ativarModoDemonstracao(){
 }
 
 function carregarPacientesExemploRapido(){
-  localStorage.removeItem('ft_demo_seeded');
+  localStorage.removeItem('ff_demo_seeded');
   seedDemoDataIfEmpty();
-  var demoPts = JSON.parse(localStorage.getItem('ft_demo_patients') || '[]');
-  var demoEnts = JSON.parse(localStorage.getItem('ft_demo_entries') || '[]');
-  var demoEvos = JSON.parse(localStorage.getItem('ft_demo_evos') || '[]');
-  var demoSchs = JSON.parse(localStorage.getItem('ft_demo_scheds') || '[]');
+  var demoPts = JSON.parse(localStorage.getItem('ff_demo_patients') || '[]');
+  var demoEnts = JSON.parse(localStorage.getItem('ff_demo_entries') || '[]');
+  var demoEvos = JSON.parse(localStorage.getItem('ff_demo_evos') || '[]');
+  var demoSchs = JSON.parse(localStorage.getItem('ff_demo_scheds') || '[]');
 
   patients = demoPts;
   entries = demoEnts;
@@ -2095,11 +2095,11 @@ function carregarPacientesExemploRapido(){
   schedules = demoSchs;
 
   try {
-    localStorage.setItem('ft_demo_patients', JSON.stringify(patients));
-    localStorage.setItem('ft_demo_entries', JSON.stringify(entries));
-    localStorage.setItem('ft_demo_evos', JSON.stringify(evolutions));
-    localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules));
-    localStorage.setItem('ft_has_sample_data', '1');
+    localStorage.setItem('ff_demo_patients', JSON.stringify(patients));
+    localStorage.setItem('ff_demo_entries', JSON.stringify(entries));
+    localStorage.setItem('ff_demo_evos', JSON.stringify(evolutions));
+    localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules));
+    localStorage.setItem('ff_has_sample_data', '1');
   } catch(e){}
 
   reconcileSchedulesWithEntries();
@@ -2122,11 +2122,11 @@ function limparPacientesExemplo(){
   schedules = schedules.filter(function(s){ return !s.id || s.id.indexOf('demo') === -1; });
 
   try {
-    localStorage.removeItem('ft_has_sample_data');
-    localStorage.setItem('ft_demo_patients', JSON.stringify(patients));
-    localStorage.setItem('ft_demo_entries', JSON.stringify(entries));
-    localStorage.setItem('ft_demo_evos', JSON.stringify(evolutions));
-    localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules));
+    localStorage.removeItem('ff_has_sample_data');
+    localStorage.setItem('ff_demo_patients', JSON.stringify(patients));
+    localStorage.setItem('ff_demo_entries', JSON.stringify(entries));
+    localStorage.setItem('ff_demo_evos', JSON.stringify(evolutions));
+    localStorage.setItem('ff_demo_scheds', JSON.stringify(schedules));
   } catch(e){}
 
   reconcileSchedulesWithEntries();
@@ -2236,10 +2236,10 @@ async function conectarPrimeiroAcessoAutomatico(){
   }
 
   // Gera ou recupera o ID único de usuário
-  var usuarioId = localStorage.getItem('ft_usuario_id');
+  var usuarioId = localStorage.getItem('ff_usuario_id');
   if(!usuarioId){
     usuarioId = 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
-    try { localStorage.setItem('ft_usuario_id', usuarioId); } catch(e){}
+    try { localStorage.setItem('ff_usuario_id', usuarioId); } catch(e){}
   }
 
   var customScriptUrl = (document.getElementById('scriptUrlInput') && document.getElementById('scriptUrlInput').value.trim()) || '';
@@ -2282,12 +2282,12 @@ async function conectarPrimeiroAcessoAutomatico(){
     };
 
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
-    localStorage.setItem('ft_calendar_id', email);
-    localStorage.setItem('ft_usuario_id', usuarioId);
-    localStorage.setItem('ft_home_address', address);
-    localStorage.setItem('ft_car_kml', String(kmlVal));
-    localStorage.setItem('ft_gas_price', String(gasVal));
-    if(sheetUrl) localStorage.setItem('ft_user_sheet_url', sheetUrl);
+    localStorage.setItem('ff_calendar_id', email);
+    localStorage.setItem('ff_usuario_id', usuarioId);
+    localStorage.setItem('ff_home_address', address);
+    localStorage.setItem('ff_car_kml', String(kmlVal));
+    localStorage.setItem('ff_gas_price', String(gasVal));
+    if(sheetUrl) localStorage.setItem('ff_user_sheet_url', sheetUrl);
     config = newConfig;
 
     contabilizarAcesso('Registro Novo Fisioterapeuta: ' + name + ' (' + email + ')');
@@ -2376,7 +2376,7 @@ async function loadData(){
     var data = await res.json();
     if(data.spreadsheetUrl){
       try {
-        localStorage.setItem('ft_user_sheet_url', data.spreadsheetUrl);
+        localStorage.setItem('ff_user_sheet_url', data.spreadsheetUrl);
         if(config) config.spreadsheetUrl = data.spreadsheetUrl;
       } catch(e){}
     }
@@ -2389,15 +2389,15 @@ async function loadData(){
       if(cfg.EmailGoogle && !config.calendarId) config.calendarId = cfg.EmailGoogle;
       if(cfg.EnderecoBase){
         config.homeAddress = cfg.EnderecoBase;
-        try { localStorage.setItem('ft_home_address', cfg.EnderecoBase); } catch(e){}
+        try { localStorage.setItem('ff_home_address', cfg.EnderecoBase); } catch(e){}
       }
       if(cfg.ConsumoKmL){
         config.carKmPerLiter = parseFloat(cfg.ConsumoKmL) || 12;
-        try { localStorage.setItem('ft_car_kml', String(config.carKmPerLiter)); } catch(e){}
+        try { localStorage.setItem('ff_car_kml', String(config.carKmPerLiter)); } catch(e){}
       }
       if(cfg.PrecoGasolina){
         config.gasPrice = parseFloat(cfg.PrecoGasolina) || 5.80;
-        try { localStorage.setItem('ft_gas_price', String(config.gasPrice)); } catch(e){}
+        try { localStorage.setItem('ff_gas_price', String(config.gasPrice)); } catch(e){}
       }
       try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch(e){}
     }
@@ -2423,12 +2423,12 @@ async function loadData(){
       if(typeof valPadrao === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valPadrao.trim())) {
         valPadrao = '';
       }
-      var savedArch = localStorage.getItem('ft_archived_' + pid) || meta.arquivado || r.Arquivado || 'Não';
+      var savedArch = localStorage.getItem('ff_archived_' + pid) || meta.arquivado || r.Arquivado || 'Não';
       return {
         id: pid,
         nome: meta.nome || r.Nome || '',
-        nomeFantasia: r.NomeFantasia || meta.nomeFantasia || localStorage.getItem('ft_nome_fantasia_' + pid) || '',
-        oldNome: localStorage.getItem('ft_old_nome_' + pid) || r.OldNome || meta.oldNome || '',
+        nomeFantasia: r.NomeFantasia || meta.nomeFantasia || localStorage.getItem('ff_nome_fantasia_' + pid) || '',
+        oldNome: localStorage.getItem('ff_old_nome_' + pid) || r.OldNome || meta.oldNome || '',
         telefone: meta.telefone !== undefined ? meta.telefone : (r.Telefone || ''),
         valorPadrao: valPadrao,
         formaPagamento: meta.formaPagamento !== undefined ? meta.formaPagamento : (r.FormaPagamento || ''),
@@ -2445,7 +2445,7 @@ async function loadData(){
         diagFuncional: r.DiagFuncional || meta.diagFuncional || '',
         objetivos: r.Objetivos || meta.objetivos || '',
         arquivado: savedArch,
-        foto: r.Foto || meta.foto || localStorage.getItem('ft_avatar_' + pid) || '',
+        foto: r.Foto || meta.foto || localStorage.getItem('ff_avatar_' + pid) || '',
         criadoEm: r.CriadoEm || ''
       };
     });
@@ -2512,14 +2512,14 @@ async function loadData(){
 
 function getLocalSchedules(){
   try{
-    var raw = localStorage.getItem('ft_local_schedules');
+    var raw = localStorage.getItem('ff_local_schedules');
     return raw ? JSON.parse(raw) : [];
   }catch(e){ return []; }
 }
 
 function saveLocalSchedules(){
   try{
-    localStorage.setItem('ft_local_schedules', JSON.stringify(schedules));
+    localStorage.setItem('ff_local_schedules', JSON.stringify(schedules));
   }catch(e){}
 }
 
@@ -2605,20 +2605,20 @@ function isSchedulePendingForecast(sc){
 
 function getLocalEvolutions(){
   try{
-    var raw = localStorage.getItem('ft_local_evolutions');
+    var raw = localStorage.getItem('ff_local_evolutions');
     return raw ? JSON.parse(raw) : [];
   }catch(e){ return []; }
 }
 
 function saveLocalEvolutions(){
   try{
-    localStorage.setItem('ft_local_evolutions', JSON.stringify(evolutions));
+    localStorage.setItem('ff_local_evolutions', JSON.stringify(evolutions));
   }catch(e){}
 }
 
 function getLocalPatientMeta(id){
   try{
-    var raw = localStorage.getItem('ft_pmeta_' + id);
+    var raw = localStorage.getItem('ff_pmeta_' + id);
     return raw ? JSON.parse(raw) : {};
   }catch(e){ return {}; }
 }
@@ -2626,8 +2626,8 @@ function getLocalPatientMeta(id){
 function saveLocalPatientMeta(p){
   if(!p || !p.id) return;
   try{
-    localStorage.setItem('ft_archived_' + p.id, p.arquivado || 'Não');
-    localStorage.setItem('ft_pmeta_' + p.id, JSON.stringify({
+    localStorage.setItem('ff_archived_' + p.id, p.arquivado || 'Não');
+    localStorage.setItem('ff_pmeta_' + p.id, JSON.stringify({
       nome: p.nome || '',
       nomeFantasia: p.nomeFantasia || '',
       oldNome: p.oldNome || '',
@@ -2654,11 +2654,11 @@ function saveLocalPatientMeta(p){
 
 function removeLocalPatientMeta(id){
   try{
-    localStorage.removeItem('ft_pmeta_' + id);
-    localStorage.removeItem('ft_archived_' + id);
-    localStorage.removeItem('ft_avatar_' + id);
-    localStorage.removeItem('ft_nome_fantasia_' + id);
-    localStorage.removeItem('ft_old_nome_' + id);
+    localStorage.removeItem('ff_pmeta_' + id);
+    localStorage.removeItem('ff_archived_' + id);
+    localStorage.removeItem('ff_avatar_' + id);
+    localStorage.removeItem('ff_nome_fantasia_' + id);
+    localStorage.removeItem('ff_old_nome_' + id);
   }catch(e){}
 }
 
@@ -2968,11 +2968,11 @@ function openPatientForm(patientId){
       '<div class="form-grid-2" style="margin-top:8px;">' +
         '<div>' +
           '<label>Bairro</label>' +
-          '<input id="pFormBairro" value="'+escapeHtml(p?p.bairro:'')+'" placeholder="Ex: Vila Tibério">' +
+          '<input id="pFormBairro" value="'+escapeHtml(p?p.bairro:'')+'" placeholder="Ex: Jardins ou Centro">' +
         '</div>' +
         '<div>' +
           '<label>Cidade</label>' +
-          '<input id="pFormCidade" value="'+escapeHtml((p&&p.cidade)||DEFAULT_CITY_FALLBACK)+'" placeholder="Ribeirão Preto - SP">' +
+          '<input id="pFormCidade" value="'+escapeHtml((p&&p.cidade)||DEFAULT_CITY_FALLBACK)+'" placeholder="Ex: São Paulo - SP">' +
         '</div>' +
       '</div>' +
 
@@ -3201,7 +3201,7 @@ async function submitPatientForm(existingId){
       var oldData = Object.assign({}, patients[idx]);
       if(oldData.nome && oldData.nome !== nome){
         patients[idx].oldNome = oldData.nome;
-        try{ localStorage.setItem('ft_old_nome_' + existingId, oldData.nome); }catch(e){}
+        try{ localStorage.setItem('ff_old_nome_' + existingId, oldData.nome); }catch(e){}
         // Propaga o novo nome oficial em memória para sessões, evoluções e agendamentos vinculados
         entries.forEach(function(en){
           if(entryMatchesPatient(en, oldData)) en.nome = nome;
@@ -3239,14 +3239,14 @@ async function submitPatientForm(existingId){
       patients[idx].foto = foto;
 
       if(nomeFantasia){
-        try{ localStorage.setItem('ft_nome_fantasia_' + existingId, nomeFantasia); }catch(e){}
+        try{ localStorage.setItem('ff_nome_fantasia_' + existingId, nomeFantasia); }catch(e){}
       } else {
-        try{ localStorage.removeItem('ft_nome_fantasia_' + existingId); }catch(e){}
+        try{ localStorage.removeItem('ff_nome_fantasia_' + existingId); }catch(e){}
       }
       if(foto){
-        try{ localStorage.setItem('ft_avatar_' + existingId, foto); }catch(e){}
+        try{ localStorage.setItem('ff_avatar_' + existingId, foto); }catch(e){}
       } else {
-        try{ localStorage.removeItem('ft_avatar_' + existingId); }catch(e){}
+        try{ localStorage.removeItem('ff_avatar_' + existingId); }catch(e){}
       }
       saveLocalPatientMeta(patients[idx]);
 
@@ -3316,10 +3316,10 @@ async function submitPatientForm(existingId){
       criadoEm: new Date().toISOString()
     };
     if(nomeFantasia){
-      try{ localStorage.setItem('ft_nome_fantasia_' + newId, nomeFantasia); }catch(e){}
+      try{ localStorage.setItem('ff_nome_fantasia_' + newId, nomeFantasia); }catch(e){}
     }
     if(foto){
-      try{ localStorage.setItem('ft_avatar_' + newId, foto); }catch(e){}
+      try{ localStorage.setItem('ff_avatar_' + newId, foto); }catch(e){}
     }
     saveLocalPatientMeta(newPatient);
     patients.push(newPatient);
@@ -4217,7 +4217,12 @@ async function submitNewEvolution(){
       renderList();
       renderPatientsTab();
       renderAgendaTab();
-      postAction(Object.assign({ action: 'create' }, newEntry)).catch(function(e){ console.warn(e); });
+      try {
+        await postAction(Object.assign({ action: 'create' }, newEntry));
+      } catch(entryErr) {
+        console.warn('Erro ao sincronizar check-in financeiro na planilha:', entryErr);
+        showToast('Evolução salva, mas o check-in financeiro ficou pendente de sincronização.', 'warn');
+      }
     }
     showToast('Evolução e Check-in financeiro registrados!', 'ok');
   } else {
@@ -6226,7 +6231,7 @@ function receiptHeader(doc, title){
 function getUserCalendarId(){
   if(config && config.calendarId) return String(config.calendarId).trim();
   try{
-    var saved = String(localStorage.getItem('ft_calendar_id') || '').trim();
+    var saved = String(localStorage.getItem('ff_calendar_id') || '').trim();
     if(saved) return saved;
   }catch(e){}
   return (typeof DEFAULT_CALENDAR_ID !== 'undefined' && DEFAULT_CALENDAR_ID) ? DEFAULT_CALENDAR_ID : '';
@@ -6260,7 +6265,7 @@ function updateGCalBannerUI(){
 function getHomeAddress(){
   if(config && config.homeAddress) return String(config.homeAddress).trim();
   try{
-    var s = String(localStorage.getItem('ft_home_address') || '').trim();
+    var s = String(localStorage.getItem('ff_home_address') || '').trim();
     if(s) return s;
   }catch(e){}
   return DEFAULT_HOME_ADDRESS;
@@ -6270,7 +6275,7 @@ function getCarKmPerLiter(){
   var val = 0;
   if(config && config.carKmPerLiter) val = parseFloat(config.carKmPerLiter);
   if(!val || isNaN(val)){
-    try{ val = parseFloat(localStorage.getItem('ft_car_kml') || ''); }catch(e){}
+    try{ val = parseFloat(localStorage.getItem('ff_car_kml') || ''); }catch(e){}
   }
   return (val && isFinite(val) && val > 0) ? val : DEFAULT_CAR_KM_PER_LITER;
 }
@@ -6279,7 +6284,7 @@ function getGasPrice(){
   var val = 0;
   if(config && config.gasPrice) val = parseFloat(config.gasPrice);
   if(!val || isNaN(val)){
-    try{ val = parseFloat(localStorage.getItem('ft_gas_price') || ''); }catch(e){}
+    try{ val = parseFloat(localStorage.getItem('ff_gas_price') || ''); }catch(e){}
   }
   return (val && isFinite(val) && val > 0) ? val : DEFAULT_GAS_PRICE;
 }
@@ -6386,10 +6391,10 @@ function saveCalendarSettings(){
   var gasVal = (gasInp && parseFloat(gasInp.value) > 0) ? parseFloat(gasInp.value) : DEFAULT_GAS_PRICE;
 
   try{
-    localStorage.setItem('ft_calendar_id', calId);
-    localStorage.setItem('ft_home_address', homeAddr);
-    localStorage.setItem('ft_car_kml', String(kmlVal));
-    localStorage.setItem('ft_gas_price', String(gasVal));
+    localStorage.setItem('ff_calendar_id', calId);
+    localStorage.setItem('ff_home_address', homeAddr);
+    localStorage.setItem('ff_car_kml', String(kmlVal));
+    localStorage.setItem('ff_gas_price', String(gasVal));
   }catch(e){}
   if(config){
     config.calendarId = calId;
@@ -6527,7 +6532,7 @@ function getRouteSyncOrApprox(origin, dest){
 }
 
 async function geocodeAddressNominatim(addr){
-  var gKey = 'ft_geo_' + normAddrKey(addr);
+  var gKey = 'ff_geo_' + normAddrKey(addr);
   try{
     var cached = localStorage.getItem(gKey);
     if(cached) return JSON.parse(cached);
@@ -8638,10 +8643,10 @@ async function saveSetup(){
 
   try{
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
-    localStorage.setItem('ft_calendar_id', calendarIdVal);
-    localStorage.setItem('ft_home_address', address);
-    localStorage.setItem('ft_car_kml', String(kmlVal));
-    localStorage.setItem('ft_gas_price', String(gasVal));
+    localStorage.setItem('ff_calendar_id', calendarIdVal);
+    localStorage.setItem('ff_home_address', address);
+    localStorage.setItem('ff_car_kml', String(kmlVal));
+    localStorage.setItem('ff_gas_price', String(gasVal));
     config = newConfig;
     var demoBanner = document.getElementById('demoModeBanner');
     if(demoBanner) demoBanner.style.display = (scriptUrlVal === 'demo') ? 'flex' : 'none';
@@ -8704,7 +8709,7 @@ function openSettings(){
   document.getElementById('backupBox').classList.remove('hidden');
   document.getElementById('diagBox').classList.remove('hidden');
 
-  var sheetUrl = (config && config.spreadsheetUrl) || localStorage.getItem('ft_user_sheet_url') || '';
+  var sheetUrl = (config && config.spreadsheetUrl) || localStorage.getItem('ff_user_sheet_url') || '';
   var boxSheet = document.getElementById('boxUserSpreadsheetLink');
   var btnLink = document.getElementById('btnLinkPlanilhaDrive');
   if(boxSheet && btnLink){
@@ -8952,6 +8957,22 @@ function promptInstall(){
 async function init(){
   try{
     config = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null');
+    if (!config) {
+      // Migração segura para FisioFlow: herda 'config' legado APENAS se NÃO for da Scarlet
+      var legacyRaw = localStorage.getItem('config');
+      if (legacyRaw) {
+        var leg = JSON.parse(legacyRaw);
+        var isScarlet = (leg.calendarId && leg.calendarId.toLowerCase().indexOf('scarlet') > -1) ||
+                        (leg.scriptUrl && leg.scriptUrl.indexOf('AKfycbwYFDh0') > -1);
+        if (!isScarlet && leg.providerName) {
+          config = leg;
+          localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+          if (leg.usuarioId) localStorage.setItem('ff_usuario_id', leg.usuarioId);
+          if (leg.calendarId) localStorage.setItem('ff_calendar_id', leg.calendarId);
+          if (leg.homeAddress) localStorage.setItem('ff_home_address', leg.homeAddress);
+        }
+      }
+    }
   }catch(e){
     config = null;
   }
@@ -8970,14 +8991,14 @@ async function init(){
     }catch(e){}
   }
   try{
-    var savedCal = localStorage.getItem('ft_calendar_id');
+    var savedCal = localStorage.getItem('ff_calendar_id');
     if(!savedCal && DEFAULT_CALENDAR_ID){
-      localStorage.setItem('ft_calendar_id', DEFAULT_CALENDAR_ID);
+      localStorage.setItem('ff_calendar_id', DEFAULT_CALENDAR_ID);
     }
   }catch(e){}
 
   var savedTab = 'pacientes';
-  try{ savedTab = localStorage.getItem('active_tab') || 'pacientes'; }catch(e){}
+  try{ savedTab = localStorage.getItem('ff_active_tab') || 'pacientes'; }catch(e){}
 
   if(!config || !config.providerName){
     if(document.getElementById('calendarIdInput')){
@@ -9597,7 +9618,7 @@ async function processGoogleOnboardingWithToken(token){
   }
   if(userEmail){
     if(document.getElementById('calendarIdInput')) document.getElementById('calendarIdInput').value = userEmail;
-    try { localStorage.setItem('ft_calendar_id', userEmail); } catch(e){}
+    try { localStorage.setItem('ff_calendar_id', userEmail); } catch(e){}
   }
 
   // Registra o evento de login
