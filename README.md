@@ -71,33 +71,34 @@ Todos os dados ficam armazenados de forma **gratuita, segura e privada** na pró
 
 ---
 
-## ⚡ Integração e Onboarding com Conta Google (Primeiro Acesso)
+## ⚡ Ativação 100% Automática para Terceiros (Sem Código)
 
-O FisioFlow conta com um assistente automatizado de primeiro acesso com a Conta Google:
+O FisioFlow foi desenhado para que qualquer fisioterapeuta possa começar a usar **em menos de 10 segundos**, sem precisar entender nada de programação, Google Apps Script ou APIs:
 
-1. **Vincular Conta Google**: com 1 clique usando o Google Identity Services (GIS), o usuário seleciona e autoriza sua conta Google.
-2. **Criação Automática no Google Drive & Sheets**: o app cria instantaneamente uma nova planilha chamada `FisioFlow - Gestão Clínica` no Drive do usuário com todas as 4 abas estruturadas e formatadas (`Atendimentos`, `Pacientes`, `Evolucoes`, `Config`).
-3. **Vinculação com Google Agenda**: conecta o e-mail do calendário para sincronização automática de sessões e horários de atendimento.
-4. **Deploy do Apps Script**: exibe botão de 1 clique para copiar o `Code.gs` e atalho para abrir o editor do Apps Script da planilha criada para gerar a URL `/exec`.
+1. **Primeiro Acesso em 1 Clique**:
+   - O fisioterapeuta abre o link do app no celular ou computador.
+   - Preenche apenas: **Nome completo**, **CREFITO/CPF** e seu **E-mail do Gmail**.
+   - Clica em **"🚀 Conectar e Criar Minha Planilha"**.
+2. **Criação e Compartilhamento Automático no Google Drive**:
+   - O backend cria instantaneamente uma planilha dedicada exclusiva para esse profissional (`FisioFlow — Dra. [Nome]`).
+   - Compartilha a planilha diretamente com o e-mail do Gmail informado como **Editor** — o fisioterapeuta pode abrir o Google Drive dele e ver a planilha em "Compartilhados comigo".
+3. **Google Agenda Integrada**:
+   - Os agendamentos criados no FisioFlow convidam e sincronizam diretamente com a Google Agenda do celular do profissional.
+4. **Link Direto nas Configurações**:
+   - Em **Configurações ⚙️**, o profissional tem o botão **"📊 Abrir Minha Planilha no Google Drive ↗"** para auditar, imprimir ou exportar seus dados a qualquer momento.
+5. **✨ Modo Demonstração**:
+   - Permite testar o app na hora sem internet ou sem cadastro, salvando tudo localmente no aparelho.
 
 ---
 
-## 🚀 Como Configurar e Utilizar
+## 🛠️ Arquitetura Multi-Tenant (Google Apps Script Central)
 
-Para colocar o **FisioFlow** em produção para você ou seus clientes:
+Para você, desenvolvedor/administrador, gerenciar o FisioFlow para centenas de profissionais:
 
-### Método A: Onboarding Automático Google (Recomendado)
-1. Abra o arquivo [`atendimentos.html`](atendimentos.html) no navegador ou acesse a versão hospedada no GitHub Pages.
-2. Na tela de boas-vindas, clique em **"Conectar com o Google"**.
-3. Autorize o acesso — o FisioFlow criará sua planilha estruturada no Google Drive e vinculará sua Google Agenda automaticamente.
-4. Clique em **"Copiar Code.gs"** e siga o link direto para implantar seu Web App no Apps Script.
-
-### Método B: Configuração Manual
-1. Crie uma nova planilha no seu [Google Drive](https://drive.google.com).
-2. Na planilha, clique em **Extensões > Apps Script**.
-3. Apague o conteúdo padrão, cole o código do arquivo [`Code.gs`](Code.gs) e salve.
-4. Clique em **Implantar > Nova implantação**, escolha **App da Web**, configure para executar como **Eu** e acesso para **Qualquer pessoa**.
-5. Copie a URL gerada (`/exec`) e cole na tela de configuração inicial do FisioFlow.
+* O arquivo [`Code.gs`](Code.gs) possui inteligência **multi-inquilino** (*multi-tenant*):
+  - Mantém uma aba central chamada `_Usuarios` com o controle de todos os fisioterapeutas cadastrados, links das planilhas, datas de criação e último acesso.
+  - Cada fisioterapeuta possui uma planilha completamente isolada e privada no Google Drive, garantindo conformidade com a LGPD e privacidade total entre pacientes de diferentes profissionais.
+  - Você só precisa implantar o `Code.gs` **uma única vez** no seu Google Drive como App da Web (`Executar como: Eu`, `Acesso: Qualquer pessoa`).
 
 ---
 

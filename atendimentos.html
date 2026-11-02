@@ -900,53 +900,75 @@
     <h1 id="setupTitle" style="text-align:center;font-size:23px;color:var(--primary-deep);margin-bottom:8px;">Bem-vindo ao FisioFlow!</h1>
     <p id="setupIntro" style="text-align:center;color:var(--ink-soft);font-size:13.5px;margin:0 0 16px;">Preencha seus dados para começar. Eles aparecem nos recibos, comprovantes e prontuários.</p>
 
-    <!-- Onboarding Inteligente com Google: Vinculação de Conta, Google Agenda e Google Sheets/Drive -->
-    <div id="googleOnboardCard" class="card" style="border: 1.5px solid #4285F4; background: #f8faff; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(66, 133, 244, 0.08);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-        <div style="font-weight:700;font-size:14.5px;color:#1e3a8a;">Primeiro Acesso: Conectar Conta Google</div>
+    <!-- Onboarding Inteligente Multi-Fisioterapeuta 100% Automático -->
+    <div id="googleOnboardCard" class="card" style="border: 1.5px solid var(--primary); background: #ffffff; margin-bottom: 16px; box-shadow: 0 4px 18px rgba(181, 84, 46, 0.08);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:36px;height:36px;background:var(--primary-soft);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">🌿</div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--primary-deep);">Ativação Automática do Fisioterapeuta</div>
+          <div style="font-size:11.5px;color:var(--ink-soft);">Criamos seu banco de dados no Google Drive sem configuração técnica</div>
+        </div>
       </div>
-      <p style="font-size:12.5px;color:#334155;margin:0 0 12px;line-height:1.45;">
-        Conecte com sua conta Google para <strong>vincular sua Google Agenda</strong> automaticamente e <strong>criar a planilha de banco de dados/backup no Google Drive</strong> com 1 toque!
-      </p>
-      <div id="g_id_signin_box" style="display:flex;flex-direction:column;gap:8px;">
-        <button type="button" id="btnGoogleAuthOnboarding" class="btn-google-official" onclick="handleGoogleOneClickOnboarding()">
-          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-          <span>Conectar Conta Google e Autoconfigurar</span>
-        </button>
-        <div id="googleStatusFeedback" style="display:none;padding:10px;border-radius:8px;font-size:12px;line-height:1.45;margin-top:6px;"></div>
 
-        <div style="display:flex;align-items:center;margin:6px 0 2px;">
-          <div style="flex:1;height:1px;background:#cbd5e1;"></div>
-          <span style="padding:0 8px;font-size:11px;color:#64748b;font-weight:700;">OU ENTRE DIRETO</span>
-          <div style="flex:1;height:1px;background:#cbd5e1;"></div>
+      <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:0 0 12px;">
+        Informe seus dados profissionais abaixo. O sistema cria automaticamente sua planilha de banco de dados, compartilha com seu Google Drive e sincroniza sua Google Agenda!
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Nome da Profissional</label>
+          <input id="providerNameInput" placeholder="Ex: Dra. Camila Santos">
         </div>
 
-        <button type="button" class="btn ghost" onclick="ativarModoDemonstracao()" style="width:100%;border:1.5px dashed #4285F4;color:#1e3a8a;font-weight:700;padding:10px 14px;border-radius:12px;background:#ffffff;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 6px rgba(66,133,244,0.06);">
-          <span>✨ Testar Agora (Modo Demonstração sem Planilha)</span>
-        </button>
-        <div style="font-size:11px;color:#64748b;text-align:center;">Salva tudo no seu celular/computador. Você pode conectar sua planilha a qualquer momento nas Configurações ⚙️.</div>
+        <div>
+          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Registro CREFITO ou CPF</label>
+          <input id="providerDocInput" placeholder="Ex: CREFITO-3/123456-F">
+        </div>
+
+        <div>
+          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Seu E-mail do Google (Gmail)</label>
+          <input id="calendarIdInput" type="email" placeholder="Ex: seuemail@gmail.com">
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.35;">
+            Uma cópia da sua planilha no Google Drive será criada e compartilhada diretamente com este e-mail para seu acesso livre e backup.
+          </div>
+        </div>
+
+        <div>
+          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Telefone ou WhatsApp para contato</label>
+          <input id="providerContactInput" placeholder="Ex: (11) 99999-9999">
+        </div>
+
+        <div id="setupError" class="error-banner hidden" style="margin-top:4px;"></div>
+
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:8px;">
+          <button type="button" class="btn primary" id="btnSalvarSetup" onclick="conectarPrimeiroAcessoAutomatico()" style="width:100%;padding:12px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <span>🚀 Conectar e Criar Minha Planilha</span>
+          </button>
+
+          <button type="button" class="btn ghost" onclick="ativarModoDemonstracao()" style="width:100%;border:1px dashed var(--line-strong);font-size:12px;color:var(--ink-soft);padding:8px;">
+            ✨ Testar Agora (Modo Demonstração sem Planilha)
+          </button>
+
+          <button id="setupCancelBtn" class="btn ghost hidden" onclick="cancelSetup()">Cancelar</button>
+        </div>
+
+        <details style="margin-top:8px;font-size:11.5px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:8px;">
+          <summary style="cursor:pointer;color:var(--primary);font-weight:600;">⚙️ Configuração avançada (Link Apps Script personalizado)</summary>
+          <div style="margin-top:6px;">
+            <label style="font-size:11px;display:block;margin-bottom:4px;">URL personalizada (/exec)</label>
+            <input id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+        </details>
       </div>
     </div>
 
-    <div class="card">
-      <div class="field-title" style="font-weight:700;margin-bottom:12px;color:var(--primary);">Dados da Profissional</div>
-      <label>Nome da profissional</label>
-      <input id="providerNameInput" placeholder="Nome completo">
-      <label style="margin-top:8px;display:block;">CREFITO / CPF</label>
-      <input id="providerDocInput" placeholder="Número de registro CREFITO ou CPF">
-      <label style="margin-top:8px;display:block;">Telefone ou PIX para contato</label>
-      <input id="providerContactInput" placeholder="Ex: (11) 99999-9999">
-      <label style="margin-top:8px;display:block;">E-mail da sua Google Agenda (opcional)</label>
-      <input id="calendarIdInput" type="email" placeholder="Ex: seuemail@gmail.com">
-      <label style="margin-top:8px;display:block;">Link da planilha (Apps Script /exec)</label>
-      <input id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
-    </div>
-
-    <div id="setupError" class="error-banner hidden"></div>
-    <div class="btn-row" style="margin-top:4px;">
-      <button id="setupCancelBtn" class="btn ghost hidden" onclick="cancelSetup()">Cancelar</button>
-      <button class="btn primary" style="flex:1;" onclick="saveSetup()">Salvar e continuar</button>
+    <!-- Link Direto da Planilha Criada no Google Drive -->
+    <div id="boxUserSpreadsheetLink" class="card hidden" style="margin-top:16px;border:1.5px solid #86efac;background:#f0fdf4;">
+      <div style="font-weight:700;color:#166534;margin-bottom:4px;display:flex;align-items:center;gap:6px;">📊 Sua Planilha no Google Drive</div>
+      <p style="font-size:12px;color:#166534;line-height:1.45;margin:0 0 10px;">Esta é a planilha dedicada aos seus atendimentos, prontuários e finanças, compartilhada com seu e-mail:</p>
+      <a id="btnLinkPlanilhaDrive" href="#" target="_blank" rel="noopener noreferrer" class="btn ghost small" style="display:inline-flex;align-items:center;gap:6px;background:#ffffff;color:#15803d;border:1px solid #86efac;text-decoration:none;font-weight:700;padding:8px 14px;border-radius:10px;">
+        Abrir Minha Planilha no Google Drive ↗
+      </a>
     </div>
 
     <div id="diagBox" class="card hidden" style="margin-top:16px;">
@@ -1265,11 +1287,26 @@
 
 <script>
 /* ============================================================
-   LINK DA PLANILHA (Google Apps Script)
-   Insira o link gerado em "Implantar > App da Web" (/exec).
-   Se vazio, o app solicitará o link na primeira inicialização.
+   LINK DA PLANILHA & BACKEND CENTRAL (Google Apps Script Multi-Tenant)
+   URL central para criação e gestão automática de planilhas para terceiros.
    ============================================================ */
-var SCRIPT_URL = ''; // Insira aqui a URL do seu Google Apps Script (/exec) ou configure na tela inicial do app
+var DEFAULT_CENTRAL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwGStc4TIkgeIhJhGvlTtVUOd-oamJ77wMgvaiisl8xjUXgXqgqm0bTPl6T0vy8Gqmw4g/exec';
+var SCRIPT_URL = DEFAULT_CENTRAL_SCRIPT_URL;
+
+function getCentralScriptUrl(){
+  if(config && config.scriptUrl && config.scriptUrl.indexOf('/exec') > -1){
+    return config.scriptUrl;
+  }
+  var custom = (localStorage.getItem('ft_custom_script_url') || '').trim();
+  if(custom) return custom;
+  if(SCRIPT_URL && SCRIPT_URL.trim()) return SCRIPT_URL.trim();
+  return DEFAULT_CENTRAL_SCRIPT_URL;
+}
+
+function getActiveUsuarioId(){
+  if(config && config.usuarioId) return config.usuarioId;
+  return localStorage.getItem('ft_usuario_id') || '';
+}
 var DEFAULT_CALENDAR_ID = 'primary';
 var DEFAULT_HOME_ADDRESS = '';
 var DEFAULT_CAR_KM_PER_LITER = 12;
@@ -1929,14 +1966,118 @@ function ativarModoDemonstracao(){
   showToast('✨ Modo Demonstração ativado! Dados salvos localmente.', 'ok');
 }
 
+async function conectarPrimeiroAcessoAutomatico(){
+  var name = (document.getElementById('providerNameInput').value || '').trim();
+  var doc = (document.getElementById('providerDocInput').value || '').trim();
+  var contact = (document.getElementById('providerContactInput').value || '').trim();
+  var calInput = document.getElementById('calendarIdInput');
+  var email = calInput ? calInput.value.trim() : '';
+  var errEl = document.getElementById('setupError');
+  errEl.classList.add('hidden');
+
+  if(!name){
+    errEl.textContent = 'Por favor, informe seu nome completo.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if(!email || email.indexOf('@') === -1){
+    errEl.textContent = 'Por favor, informe um e-mail válido do Google (Gmail) para vincular sua planilha e agenda.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  var btn = document.getElementById('btnSalvarSetup');
+  var origText = btn ? btn.innerHTML : '';
+  if(btn){
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Criando sua planilha e configurando o app...';
+  }
+
+  // Gera ou recupera o ID único de usuário
+  var usuarioId = localStorage.getItem('ft_usuario_id');
+  if(!usuarioId){
+    usuarioId = 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+    try { localStorage.setItem('ft_usuario_id', usuarioId); } catch(e){}
+  }
+
+  var customScriptUrl = (document.getElementById('scriptUrlInput') && document.getElementById('scriptUrlInput').value.trim()) || '';
+  var targetUrl = customScriptUrl || getCentralScriptUrl();
+
+  try {
+    var payload = {
+      action: 'register_user',
+      usuarioId: usuarioId,
+      email: email,
+      nome: name,
+      documento: doc,
+      contato: contact
+    };
+
+    var res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+
+    var data = null;
+    try { data = await res.json(); } catch(e){}
+
+    var sheetUrl = (data && data.spreadsheetUrl) || '';
+    var newConfig = {
+      usuarioId: usuarioId,
+      scriptUrl: targetUrl,
+      providerName: name,
+      providerDoc: doc,
+      providerContact: contact,
+      calendarId: email,
+      spreadsheetUrl: sheetUrl
+    };
+
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
+    localStorage.setItem('ft_calendar_id', email);
+    localStorage.setItem('ft_usuario_id', usuarioId);
+    if(sheetUrl) localStorage.setItem('ft_user_sheet_url', sheetUrl);
+    config = newConfig;
+
+    contabilizarAcesso('Registro Novo Fisioterapeuta: ' + name + ' (' + email + ')');
+
+    document.getElementById('setupScreen').classList.add('hidden');
+    document.getElementById('mainScreen').classList.remove('hidden');
+    document.getElementById('fab').classList.remove('hidden');
+    var pName = document.getElementById('providerNameDisplay');
+    if(pName) pName.textContent = config.providerName;
+    var demoBanner = document.getElementById('demoModeBanner');
+    if(demoBanner) demoBanner.style.display = 'none';
+    updateMonthLabel();
+    switchMainTab('pacientes');
+    await loadData();
+    showToast('🎉 Pronto! Seu banco de dados foi criado e sincronizado.', 'ok');
+  } catch(err) {
+    if(btn){
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+    errEl.innerHTML = '⚠️ Erro ao registrar no servidor central: ' + escapeHtml(err.message) + '<br>Você pode tentar novamente ou entrar no <a href="javascript:void(0)" onclick="ativarModoDemonstracao()" style="color:var(--primary);font-weight:700;">Modo Demonstração</a>.';
+    errEl.classList.remove('hidden');
+  }
+}
+
 /* ---------- Rede & Apps Script ---------- */
 function scriptUrl(){
-  return (config && config.scriptUrl) || SCRIPT_URL;
+  return (config && config.scriptUrl) || getCentralScriptUrl();
 }
 async function postAction(payload){
   if(scriptUrl() === 'demo'){
     return Promise.resolve(handleDemoPostAction(payload));
   }
+  var uId = getActiveUsuarioId();
+  if(uId && !payload.usuarioId){
+    payload.usuarioId = uId;
+  }
+  if(config && config.calendarId && !payload.email){
+    payload.email = config.calendarId;
+  }
+
   var res = await fetch(scriptUrl(), {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1973,7 +2114,21 @@ async function loadData(){
     return;
   }
   try{
-    var res = await fetch(scriptUrl(), { method: 'GET' });
+    var fetchUrl = scriptUrl();
+    var uId = getActiveUsuarioId();
+    if(uId && fetchUrl.indexOf('/exec') > -1){
+      var sep = fetchUrl.indexOf('?') > -1 ? '&' : '?';
+      fetchUrl += sep + 'usuarioId=' + encodeURIComponent(uId);
+    }
+    var res = await fetch(fetchUrl, { method: 'GET' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if(data.spreadsheetUrl){
+      try {
+        localStorage.setItem('ft_user_sheet_url', data.spreadsheetUrl);
+        if(config) config.spreadsheetUrl = data.spreadsheetUrl;
+      } catch(e){}
+    }
     if(!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
 
@@ -8140,6 +8295,8 @@ async function saveSetup(){
   }
   var topBackBtn = document.getElementById('setupTopBackBtn');
   if(topBackBtn) topBackBtn.classList.add('hidden');
+  var boxSheet = document.getElementById('boxUserSpreadsheetLink');
+  if(boxSheet) boxSheet.classList.add('hidden');
   document.getElementById('setupScreen').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
   document.getElementById('fab').classList.remove('hidden');
@@ -8162,6 +8319,19 @@ function openSettings(){
   document.getElementById('setupCancelBtn').classList.remove('hidden');
   document.getElementById('backupBox').classList.remove('hidden');
   document.getElementById('diagBox').classList.remove('hidden');
+
+  var sheetUrl = (config && config.spreadsheetUrl) || localStorage.getItem('ft_user_sheet_url') || '';
+  var boxSheet = document.getElementById('boxUserSpreadsheetLink');
+  var btnLink = document.getElementById('btnLinkPlanilhaDrive');
+  if(boxSheet && btnLink){
+    if(sheetUrl && sheetUrl.indexOf('http') === 0){
+      btnLink.href = sheetUrl;
+      boxSheet.classList.remove('hidden');
+    } else {
+      boxSheet.classList.add('hidden');
+    }
+  }
+
   document.getElementById('providerNameInput').value = (config && config.providerName) || '';
   document.getElementById('providerDocInput').value = (config && config.providerDoc) || '';
   document.getElementById('providerContactInput').value = (config && config.providerContact) || '';
@@ -8187,6 +8357,8 @@ function cancelSetup(fromPopstate){
   _settingsOpen = false;
   var topBackBtn = document.getElementById('setupTopBackBtn');
   if(topBackBtn) topBackBtn.classList.add('hidden');
+  var boxSheet = document.getElementById('boxUserSpreadsheetLink');
+  if(boxSheet) boxSheet.classList.add('hidden');
   document.getElementById('setupScreen').classList.add('hidden');
   document.getElementById('setupError').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
@@ -8371,11 +8543,7 @@ async function init(){
   var savedTab = 'pacientes';
   try{ savedTab = localStorage.getItem('active_tab') || 'pacientes'; }catch(e){}
 
-  var hasUrl = (config && config.scriptUrl && (config.scriptUrl.indexOf('/exec') > -1 || config.scriptUrl === 'demo')) || (SCRIPT_URL && SCRIPT_URL.indexOf('/exec') > -1);
-  if(!config || !config.providerName || !hasUrl){
-    if(document.getElementById('scriptUrlInput') && SCRIPT_URL){
-      document.getElementById('scriptUrlInput').value = SCRIPT_URL;
-    }
+  if(!config || !config.providerName){
     if(document.getElementById('calendarIdInput')){
       document.getElementById('calendarIdInput').value = getUserCalendarId();
     }

@@ -43,8 +43,105 @@ function ensureHeaders_(sheet, expectedHeaders) {
   }
 }
 
+var _currentSS_ = null;
+var SHEET_USUARIOS = '_Usuarios';
+var USUARIOS_HEADERS = ['UsuarioId', 'Email', 'Nome', 'Documento', 'SpreadsheetId', 'SpreadsheetUrl', 'CriadoEm', 'UltimoAcesso'];
+
+function getActiveOrTargetSpreadsheet_() {
+  if (_currentSS_) return _currentSS_;
+  try {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  } catch(e) {
+    return null;
+  }
+}
+
+function resolveSpreadsheet_(usuarioId, meta) {
+  var masterSs = null;
+  try { masterSs = SpreadsheetApp.getActiveSpreadsheet(); } catch(e){}
+  if (!masterSs) return null;
+
+  if (!usuarioId) {
+    return masterSs;
+  }
+
+  var normalizedId = String(usuarioId).trim().toLowerCase();
+  var email = String((meta && (meta.email || meta.calendarId)) || (normalizedId.indexOf('@') > -1 ? normalizedId : '')).trim();
+  var nome = String((meta && (meta.nome || meta.providerName)) || '').trim();
+  var doc = String((meta && (meta.documento || meta.providerDoc)) || '').trim();
+
+  try {
+    var uSheet = masterSs.getSheetByName(SHEET_USUARIOS);
+    if (!uSheet) {
+      uSheet = masterSs.insertSheet(SHEET_USUARIOS);
+      uSheet.appendRow(USUARIOS_HEADERS);
+      uSheet.setFrozenRows(1);
+    } else {
+      ensureHeaders_(uSheet, USUARIOS_HEADERS);
+    }
+
+    var data = uSheet.getDataRange().getValues();
+    var foundRowIdx = -1;
+    var foundSheetId = '';
+
+    for (var i = 1; i < data.length; i++) {
+      var rowUid = String(data[i][0]).trim().toLowerCase();
+      var rowEmail = String(data[i][1]).trim().toLowerCase();
+      if ((rowUid && rowUid === normalizedId) || (email && rowEmail && rowEmail === email.toLowerCase())) {
+        foundRowIdx = i + 1;
+        foundSheetId = String(data[i][4]).trim();
+        break;
+      }
+    }
+
+    if (foundRowIdx > 0 && foundSheetId) {
+      try {
+        uSheet.getRange(foundRowIdx, 8).setValue(new Date());
+      } catch(e){}
+
+      try {
+        return SpreadsheetApp.openById(foundSheetId);
+      } catch(errOpen) {
+        console.warn('Erro ao abrir planilha existente, criando nova:', errOpen);
+      }
+    }
+
+    var title = 'FisioFlow — ' + (nome || email || usuarioId);
+    var newSs = SpreadsheetApp.create(title);
+    var newSheetId = newSs.getId();
+    var newSheetUrl = newSs.getUrl();
+
+    var prevSS = _currentSS_;
+    _currentSS_ = newSs;
+    getPacSheet_();
+    getAtendSheet_();
+    getEvoSheet_();
+    getAgendSheet_();
+    getExeSheet_();
+    getRotSheet_();
+    _currentSS_ = prevSS;
+
+    if (email && email.indexOf('@') > -1) {
+      try {
+        var file = DriveApp.getFileById(newSheetId);
+        file.addEditor(email);
+      } catch(shareErr) {
+        console.warn('Aviso ao compartilhar planilha com ' + email + ': ' + shareErr.message);
+      }
+    }
+
+    var now = new Date();
+    uSheet.appendRow([normalizedId, email, nome, doc, newSheetId, newSheetUrl, now, now]);
+    return newSs;
+  } catch(errResolve) {
+    console.warn('Erro ao resolver planilha do usuário, usando master:', errResolve);
+    return masterSs;
+  }
+}
+
 function getSheet_(name, headers) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getActiveOrTargetSpreadsheet_();
+  if (!ss) throw new Error('Nenhuma planilha ativa disponível para a operação.');
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
@@ -65,7 +162,8 @@ function getAgendSheet_() { return getSheet_(SHEET_AGEND, AGEND_HEADERS); }
 
 function getTimeZone_() {
   try {
-    return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'America/Sao_Paulo';
+    var ss = getActiveOrTargetSpreadsheet_();
+    return (ss && ss.getSpreadsheetTimeZone()) || 'America/Sao_Paulo';
   } catch(e) {
     return 'America/Sao_Paulo';
   }
@@ -229,7 +327,7 @@ function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
 
   var tz = 'America/Sao_Paulo';
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getActiveOrTargetSpreadsheet_();
     if (ss && ss.getSpreadsheetTimeZone()) {
       tz = ss.getSpreadsheetTimeZone();
     }
@@ -414,7 +512,14 @@ function deleteCalendarEventForSchedule_(eventId, calendarId) {
 }
 
 function doGet(e) {
+  var usuarioId = (e && e.parameter && (e.parameter.usuarioId || e.parameter.email)) || '';
+  var targetSs = resolveSpreadsheet_(usuarioId, (e && e.parameter) || {});
+  _currentSS_ = targetSs;
+
   var result = {
+    success: true,
+    usuarioId: usuarioId,
+    spreadsheetUrl: targetSs ? targetSs.getUrl() : '',
     atendimentos: sheetToObjects_(getAtendSheet_()),
     pacientes: sheetToObjects_(getPacSheet_()),
     evolucoes: sheetToObjects_(getEvoSheet_()),
@@ -422,6 +527,7 @@ function doGet(e) {
     rotinas: sheetToObjects_(getRotSheet_()),
     agendamentos: sheetToObjects_(getAgendSheet_())
   };
+  _currentSS_ = null;
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
 }
@@ -505,6 +611,22 @@ function doPost(e) {
     if (!lockAcquired) {
       result.success = false;
       result.error = 'O servidor da planilha está ocupado. Tente novamente em instantes.';
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var usuarioId = body.usuarioId || body.email || '';
+    var targetSs = resolveSpreadsheet_(usuarioId, body);
+    _currentSS_ = targetSs;
+    if (_currentSS_) {
+      result.spreadsheetUrl = _currentSS_.getUrl();
+    }
+
+    /* ---------- Registro Automático de Novo Usuário (Multi-Tenant) ---------- */
+    if (body.action === 'register_user') {
+      result.usuarioId = usuarioId;
+      result.spreadsheetId = _currentSS_ ? _currentSS_.getId() : '';
+      result.spreadsheetUrl = _currentSS_ ? _currentSS_.getUrl() : '';
       return ContentService.createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -967,6 +1089,7 @@ function doPost(e) {
     result.success = false;
     result.error = 'Exceção interna no script: ' + (err.message || String(err));
   } finally {
+    _currentSS_ = null;
     if (lockAcquired) {
       lock.releaseLock();
     }
