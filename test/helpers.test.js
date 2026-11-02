@@ -414,6 +414,65 @@ describe('Google Calendar Integration Helpers', () => {
     assert.match(urlVac, /dates=20261115T080000%2F20261115T200000/);
     assert.match(urlVac, /Congresso%20de%20Fisioterapia/);
   });
+
+  test('openScheduleInGCalUrl opens day view directly if schedule is already synced with calendarEventId', () => {
+    let openedUrl = '';
+    const mockWindow = {
+      open: (url) => { openedUrl = url; }
+    };
+    const scSynced = {
+      id: 'sc_synced_1',
+      calendarEventId: 'google_ev_123',
+      data: '2026-11-10',
+      hora: '14:00'
+    };
+    const openScheduleInGCalUrlFn = extractFnWithScope('openScheduleInGCalUrl', {
+      schedules: [scSynced],
+      getUserCalendarId: () => 'scarletsantos7@gmail.com',
+      window: mockWindow,
+      scriptUrl: () => 'demo',
+      buildGCalTemplateUrl: () => ''
+    });
+
+    openScheduleInGCalUrlFn('sc_synced_1');
+    assert.match(openedUrl, /calendar\.google\.com\/calendar\/r\/day\/2026\/11\/10/);
+    assert.match(openedUrl, /authuser=scarletsantos7%40gmail\.com/);
+  });
+
+  test('buildIcsFeed_ in Code.gs produces valid RFC 5545 iCalendar feed', () => {
+    const codeGs = fs.readFileSync(path.join(__dirname, '../Code.gs'), 'utf-8');
+    const mIcs = codeGs.match(/function buildIcsFeed_\([\s\S]*?\n}/);
+    assert.ok(mIcs, 'buildIcsFeed_ exists in Code.gs');
+
+    const mPad = codeGs.match(/function pad2_\([\s\S]*?\n}/);
+    const mFmt = codeGs.match(/function formatIcsDateTime_\([\s\S]*?\n}/);
+    const mParse = codeGs.match(/function parseScheduleDates_\([\s\S]*?\n}/);
+
+    const pad2_ = new Function(`return (${mPad[0]})`)();
+    const formatIcsDateTime_ = new Function('pad2_', `return (${mFmt[0]})`)(pad2_);
+    const parseScheduleDates_ = new Function('pad2_', 'Utilities', `return (${mParse[0]})`)(pad2_, { parseDate: () => null });
+    const buildIcsFeed_ = new Function('pad2_', 'formatIcsDateTime_', 'parseScheduleDates_', `return (${mIcs[0]})`)(pad2_, formatIcsDateTime_, parseScheduleDates_);
+
+    const feed = buildIcsFeed_([
+      {
+        ID: 'ag_test_1',
+        PacienteNome: 'Dona Maria',
+        Data: '2026-11-10',
+        Hora: '14:00',
+        DuracaoMin: 50,
+        Status: 'Agendado'
+      }
+    ], 'scarletsantos7@gmail.com');
+
+    assert.match(feed, /BEGIN:VCALENDAR/);
+    assert.match(feed, /VERSION:2\.0/);
+    assert.match(feed, /BEGIN:VEVENT/);
+    assert.match(feed, /UID:ag_test_1@fisioflow/);
+    assert.match(feed, /DTSTART:20261110T140000/);
+    assert.match(feed, /DTEND:20261110T145000/);
+    assert.match(feed, /SUMMARY:Fisioterapia: Dona Maria/);
+    assert.match(feed, /END:VCALENDAR/);
+  });
 });
 
 describe('Route Engine, Haversine Estimation and Coordinates Matching', () => {

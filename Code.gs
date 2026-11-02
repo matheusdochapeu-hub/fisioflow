@@ -550,7 +550,7 @@ function resolveUserCalendar_(calendarId) {
     } catch (eAll) {}
   }
 
-  // 3. Fallback inteligente: Grava na agenda padrão ativa e vincula como convidado SEM DISPARO DE E-MAILS
+  // 3. Fallback inteligente: Se não puder gravar diretamente na agenda externa, vincula via convite
   var resFallback = {
     cal: defaultCal,
     calendarId: cid || (defaultCal ? defaultCal.getId() : 'primary'),
@@ -558,7 +558,8 @@ function resolveUserCalendar_(calendarId) {
     targetGuest: (cid && cid.indexOf('@') > -1 && cid !== 'primary') ? cid : null,
     isOwner: false,
     isDirectShared: false,
-    mode: 'default_no_invite'
+    mode: 'invite',
+    effectiveUser: effectiveEmail
   };
   _resolvedCalendarCache[cid] = resFallback;
   return resFallback;
@@ -638,6 +639,7 @@ function createCalendarEventForSchedule_(item) {
     };
     if (resolved.targetGuest && !resolved.isOwner && !resolved.isDirectShared) {
       opts.guests = resolved.targetGuest;
+      opts.sendInvites = true;
     }
 
     var ev = null;
@@ -735,7 +737,74 @@ function isInvalidOptionalName_(name) {
   return !!String(name || '').trim() && isInvalidPatientName_(name);
 }
 
+function formatIcsDateTime_(isoDate, timeStr) {
+  var d = String(isoDate || '').replace(/[^0-9]/g, '');
+  var tParts = String(timeStr || '14:00').split(':');
+  var hh = pad2_(parseInt(tParts[0], 10) || 14);
+  var mm = pad2_(parseInt(tParts[1], 10) || 0);
+  return d + 'T' + hh + mm + '00';
+}
+
+function buildIcsFeed_(items, usuarioId) {
+  var lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//FisioFlow//Agendamentos//PT-BR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:FisioFlow - Atendimentos',
+    'X-WR-TIMEZONE:America/Sao_Paulo'
+  ];
+  var nowIso = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  (items || []).forEach(function(it) {
+    if (!it || !it.Data) return;
+    var hora = it.Hora || '14:00';
+    var dur = parseInt(it.DuracaoMin, 10) || 50;
+    var dates = parseScheduleDates_(it.Data, hora, dur);
+    if (!dates) return;
+
+    var dtStart = formatIcsDateTime_(it.Data, hora);
+    var endH = pad2_(dates.end.getHours());
+    var endM = pad2_(dates.end.getMinutes());
+    var dtEnd = String(it.Data).replace(/[^0-9]/g, '') + 'T' + endH + endM + '00';
+
+    var isBlock = it.PacienteID === '__BLOQUEIO__' || it.Status === 'Ausência' || it.Status === 'Férias' || it.Tipo === 'Bloqueio';
+    var title = isBlock ? ('🏖️ ' + (it.PacienteNome || 'Férias / Ausência')) : ('Fisioterapia: ' + (it.PacienteNome || 'Paciente'));
+    var summary = title.replace(/[\r\n]+/g, ' ');
+    var desc = (it.Observacao ? ('Obs: ' + it.Observacao + '\n') : '') + 'Sincronizado automaticamente pelo FisioFlow.';
+
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:' + (it.ID || ('ag_' + Date.now())) + '@fisioflow');
+    lines.push('DTSTAMP:' + nowIso);
+    lines.push('DTSTART:' + dtStart);
+    lines.push('DTEND:' + dtEnd);
+    lines.push('SUMMARY:' + summary);
+    lines.push('DESCRIPTION:' + desc.replace(/[\r\n]+/g, '\\n'));
+    lines.push('STATUS:CONFIRMED');
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
 function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) || '';
+  if (action === 'calendar_feed' || action === 'feed_ics' || action === 'ics') {
+    var usuarioIdFeed = (e && e.parameter && (e.parameter.usuarioId || e.parameter.email)) || '';
+    var feedSs = resolveSpreadsheet_(usuarioIdFeed, (e && e.parameter) || {});
+    _currentSS_ = feedSs;
+    var rawAgendFeed = sheetToObjects_(getAgendSheet_());
+    var activeAgendFeed = rawAgendFeed.filter(function(a){
+      return a && a.ID && a.Data && a.Status !== 'Cancelado';
+    });
+    var icsFeed = buildIcsFeed_(activeAgendFeed, usuarioIdFeed);
+    _currentSS_ = null;
+    return ContentService.createTextOutput(icsFeed)
+      .setMimeType(ContentService.MimeType.ICAL);
+  }
+
   var usuarioId = (e && e.parameter && e.parameter.usuarioId) || '';
   var targetSs = resolveSpreadsheet_(usuarioId, (e && e.parameter) || {});
   _currentSS_ = targetSs;
@@ -832,14 +901,16 @@ function doPost(e) {
       result.mode = resolvedTest.mode;
       result.calendarId = resolvedTest.calendarId;
       result.effectiveUser = effectiveEmail;
-      result.sendInvites = false;
+      result.isDirectShared = !!resolvedTest.isDirectShared;
+      result.isOwner = !!resolvedTest.isOwner;
+      result.sendInvites = (resolvedTest.mode === 'invite');
 
       if (resolvedTest.mode === 'direct_native') {
-        result.message = 'Conectado nativamente à conta Google (' + (resolvedTest.cal.getName() || resolvedTest.calendarId) + '). Os agendamentos são gravados diretamente na agenda.';
+        result.message = 'Conectado nativamente à sua conta Google (' + (resolvedTest.cal.getName() || resolvedTest.calendarId) + '). Agendamentos e alterações são gravados instantaneamente na sua Google Agenda.';
       } else if (resolvedTest.mode === 'direct_shared') {
-        result.message = 'Conectado diretamente à agenda compartilhada "' + (resolvedTest.cal.getName() || resolvedTest.calendarId) + '" sem envio de convites por e-mail.';
+        result.message = 'Conectado com sucesso à agenda compartilhada "' + (resolvedTest.cal.getName() || resolvedTest.calendarId) + '". Gravação e atualização 100% automáticas e diretas.';
       } else {
-        result.message = 'Conectado à agenda ativa (' + (resolvedTest.cal.getName() || effectiveEmail) + '). Agendamentos são gravados diretamente sem envio de convites por e-mail.';
+        result.message = 'Aviso: A agenda ' + (body.calendarId || 'Gmail') + ' ainda não está compartilhada para gravação direta com a conta do servidor (' + effectiveEmail + ').';
       }
     }
     return ContentService.createTextOutput(JSON.stringify(result))
@@ -1027,26 +1098,46 @@ function doPost(e) {
         result.error = 'ID e Data são obrigatórios para agendamento.';
         return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
       }
-      var calRes = createCalendarEventForSchedule_(body);
-      var evId = calRes.eventId || '';
-      getAgendSheet_().appendRow([
-        body.id,
-        body.pacienteId || '',
-        body.pacienteNome || '',
-        body.data || '',
-        body.hora || '',
-        body.duracaoMin || 50,
-        body.valor !== undefined ? body.valor : '',
-        body.status || 'Agendado',
-        body.observacao || '',
-        evId,
-        body.calendarId || DEFAULT_CALENDAR_ID || 'primary',
-        body.atendimentoId || '',
-        new Date().toISOString()
-      ]);
+      var calRes;
+      if (body.calendarEventId) {
+        calRes = updateCalendarEventForSchedule_(body);
+      } else {
+        calRes = createCalendarEventForSchedule_(body);
+      }
+      var evId = (calRes && calRes.eventId) || body.calendarEventId || '';
+      var sAgSingle = getAgendSheet_();
+      var existingSingle = getRowObjectById_(sAgSingle, body.id);
+      if (existingSingle) {
+        var updObj = {
+          Data: body.data,
+          Hora: body.hora,
+          DuracaoMin: body.duracaoMin || 50,
+          Status: body.status || 'Agendado',
+          Observacao: body.observacao || '',
+          CalendarId: body.calendarId || DEFAULT_CALENDAR_ID || 'primary'
+        };
+        if (evId) updObj.CalendarEventId = evId;
+        updateRowObjectById_(sAgSingle, body.id, updObj);
+      } else {
+        sAgSingle.appendRow([
+          body.id,
+          body.pacienteId || '',
+          body.pacienteNome || '',
+          body.data || '',
+          body.hora || '',
+          body.duracaoMin || 50,
+          body.valor !== undefined ? body.valor : '',
+          body.status || 'Agendado',
+          body.observacao || '',
+          evId,
+          body.calendarId || DEFAULT_CALENDAR_ID || 'primary',
+          body.atendimentoId || '',
+          new Date().toISOString()
+        ]);
+      }
       result.calendarEventId = evId;
       result.eventId = evId;
-      if (calRes.warning) result.calendarWarning = calRes.warning;
+      if (calRes && calRes.warning) result.calendarWarning = calRes.warning;
 
     } else if (body.action === 'create_schedules_batch' || body.action === 'sync_schedules') {
       var items = Array.isArray(body.items) ? body.items : [];
@@ -1075,7 +1166,15 @@ function doPost(e) {
         if (cRes && cRes.warning && warnings.indexOf(cRes.warning) === -1) warnings.push(cRes.warning);
 
         if (existingMap[String(it.id)]) {
-          if (cId) updateFieldById_(sAg, it.id, 'CalendarEventId', cId);
+          var updFields = {};
+          if (cId) updFields['CalendarEventId'] = cId;
+          if (it.data) updFields['Data'] = it.data;
+          if (it.hora) updFields['Hora'] = it.hora;
+          if (it.status) updFields['Status'] = it.status;
+          if (it.duracaoMin) updFields['DuracaoMin'] = it.duracaoMin;
+          if (it.observacao !== undefined) updFields['Observacao'] = it.observacao;
+          if (it.valor !== undefined) updFields['Valor'] = it.valor;
+          updateRowObjectById_(sAg, it.id, updFields);
         } else {
           rowsToAdd.push([
             it.id,

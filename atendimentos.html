@@ -6820,16 +6820,23 @@ function openCalendarSettingsModal(){
   var homeAddr = getHomeAddress();
   var kml = getCarKmPerLiter();
   var gasPrice = getGasPrice();
+  var feedUrl = (scriptUrl() && scriptUrl() !== 'demo')
+    ? (scriptUrl() + '?action=calendar_feed&usuarioId=' + encodeURIComponent(getActiveUsuarioId() || calId))
+    : '';
+
   var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
     '<div class="modal">' +
       '<div class="grabber"></div>' +
-      '<h2>📅 Configurar Agenda &amp; Rotas</h2>' +
+      '<h2>📅 Configurar Google Agenda &amp; Rotas</h2>' +
       '<p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;line-height:1.45;">' +
         'Configure o seu <strong>Google Agenda</strong> e os parâmetros de <strong>endereço base e consumo do carro</strong> para cálculo automático de rotas e intervalos.' +
       '</p>' +
 
-      '<label>Seu E-mail do Google Agenda (Gmail)</label>' +
+      '<label>Seu E-mail do Google Agenda (Gmail) *</label>' +
       '<input id="modalCalendarIdInput" type="email" placeholder="Ex: seuemail@gmail.com" value="' + escapeHtml(calId) + '" autocomplete="email">' +
+      '<p style="font-size:11px;color:var(--ink-soft);margin-top:3px;margin-bottom:12px;">' +
+        'Para sincronizar atendimentos e ausências diretamente no app do Google Agenda no seu celular.' +
+      '</p>' +
 
       '<div class="form-section-title" style="margin-top:14px;">🚗 Parâmetros de Rota e Combustível</div>' +
       '<label>Seu Endereço Base (Casa / Consultório)</label>' +
@@ -6849,8 +6856,21 @@ function openCalendarSettingsModal(){
       '<div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-top:14px;font-size:12px;color:var(--ink-soft);line-height:1.5;">' +
         '<div style="font-weight:700;color:var(--ink);margin-bottom:4px;">💡 Como funciona a inteligência de rotas e agenda:</div>' +
         '1. <strong>Atendimentos seguidos (ex: 14h às 14h50 e próximo às 15h):</strong> Verifica se o tempo dirigindo é de no máximo <strong>8 a 9 minutos</strong> para você chegar sem atraso.<br>' +
-        '2. <strong>Intervalos longos (ex: 10h → 14h) ou cancelamentos (ex: paciente das 15h cancelou e próximo é às 16h):</strong> Calcula o tempo livre em casa e o gasto de combustível (a <strong>' + kml + ' km/L</strong>) e recomenda se compensa <strong>ir para casa</strong> ou <strong>esperar na rua</strong>.' +
+        '2. <strong>Intervalos longos (ex: 10h → 14h) ou cancelamentos:</strong> Calcula o tempo livre em casa e o gasto de combustível (a <strong>' + kml + ' km/L</strong>) e recomenda se compensa <strong>ir para casa</strong> ou <strong>esperar na rua</strong>.' +
       '</div>' +
+
+      (feedUrl ? (
+        '<div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;">' +
+          '<div style="font-weight:700;font-size:12px;color:var(--ink);margin-bottom:4px;">🔗 Link de Inscrição iCal (Ao Vivo no Google Agenda):</div>' +
+          '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:6px;line-height:1.4;">' +
+            'Adicione este link em "Outras agendas &gt; Do URL" no Google Agenda ou iPhone para ver sua escala em tempo real:' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center;">' +
+            '<input id="modalIcsFeedInp" type="text" readonly value="' + escapeHtml(feedUrl) + '" style="font-size:11px;padding:6px;font-family:monospace;background:var(--bg);">' +
+            '<button class="btn small ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById(\'modalIcsFeedInp\').value);showToast(\'Link iCal copiado!\',\'ok\')">Copiar</button>' +
+          '</div>' +
+        '</div>'
+      ) : '') +
 
       '<div id="calTestResultBox" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-xs);font-size:12px;line-height:1.4;"></div>' +
 
@@ -6879,16 +6899,43 @@ async function testGoogleCalendarConnection(){
   resBox.style.background = 'var(--surface)';
   resBox.style.border = '1px solid var(--line)';
   resBox.style.color = 'var(--ink)';
-  resBox.textContent = '⏳ Testando conexão com o Google Agenda via Apps Script...';
+  resBox.innerHTML = '⏳ <strong>Testando permissões da Google Agenda...</strong>';
 
   try{
     var resp = await postAction({ action: 'test_calendar', calendarId: calId });
-    resBox.style.background = 'var(--ok-bg)';
-    resBox.style.border = '1px solid var(--ok)';
-    resBox.style.color = '#2b4718';
-    var friendlyMsg = resp.message || ('Agenda "' + (resp.calendarName || 'Principal') + '" conectada com sucesso.');
-    resBox.innerHTML = '✅ <strong>Conexão ativa!</strong> ' + escapeHtml(friendlyMsg) +
-      '<br><span style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;display:inline-block;">Dica: você também pode abrir qualquer atendimento na sua Google Agenda em 1 toque pelo botão 📅 Google Agenda na lista.</span>';
+    var srvEmail = resp.effectiveUser || 'matheusrodrigues1917@usp.br';
+
+    if(resp.mode === 'direct_native' || resp.mode === 'direct_shared'){
+      resBox.style.background = 'var(--ok-bg)';
+      resBox.style.border = '1px solid var(--ok)';
+      resBox.style.color = '#2b4718';
+      resBox.innerHTML = '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">✅ Conexão 100% Automática Ativa!</div>' +
+        '<div style="font-size:12px;line-height:1.45;">' +
+          'A agenda <strong>' + escapeHtml(resp.calendarName || calId) + '</strong> está conectada para gravação direta. ' +
+          'Novos agendamentos, edições e cancelamentos entram automaticamente no seu Google Agenda sem você precisar fazer nada!' +
+        '</div>';
+    } else {
+      resBox.style.background = '#FFFBEB';
+      resBox.style.border = '1px solid #F59E0B';
+      resBox.style.color = '#92400E';
+      resBox.innerHTML = '<div style="font-weight:700;font-size:13px;margin-bottom:6px;">⚠️ Para sincronização 100% automática no seu celular:</div>' +
+        '<div style="font-size:12px;line-height:1.5;">' +
+          'O servidor Apps Script roda na conta: <strong style="user-select:all;background:#fef3c7;padding:1px 5px;border-radius:4px;">' + escapeHtml(srvEmail) + '</strong>.<br>' +
+          'Por segurança, o Google Agenda só permite gravação automática direta se você compartilhar sua agenda com essa conta.<br><br>' +
+          '<strong>Passo a passo rápido (faça apenas 1 vez):</strong>' +
+          '<ol style="margin:4px 0 8px 18px;padding:0;line-height:1.6;">' +
+            '<li>Abra o <a href="https://calendar.google.com/calendar/r/settings" target="_blank" style="color:var(--primary-deep);font-weight:700;text-decoration:underline;">Google Agenda (Configurações)</a> no computador ou navegador.</li>' +
+            '<li>Em <em>Minhas Agendas</em>, clique nos 3 pontinhos (⋮) ao lado do seu nome &gt; <strong>Configurações e compart.</strong></li>' +
+            '<li>Role até <strong>Compartilhar com pessoas específicas</strong> e clique em <strong>Adicionar pessoas</strong>.</li>' +
+            '<li>Cole o e-mail: <strong style="user-select:all;background:#fef3c7;padding:1px 5px;border-radius:4px;">' + escapeHtml(srvEmail) + '</strong></li>' +
+            '<li>Em <em>Permissões</em>, selecione: <strong>Fazer alterações nos eventos</strong> e clique em Enviar.</li>' +
+          '</ol>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">' +
+            '<button class="btn small primary" type="button" onclick="navigator.clipboard.writeText(\'' + escapeHtml(srvEmail) + '\');showToast(\'E-mail copiado! Cole no Google Agenda.\', \'ok\')">📋 Copiar E-mail do Servidor</button>' +
+            '<a href="https://calendar.google.com/calendar/r/settings" target="_blank" class="btn small ghost" style="text-decoration:none;">🔗 Abrir Google Agenda</a>' +
+          '</div>' +
+        '</div>';
+    }
   }catch(err){
     resBox.style.background = '#FBE6E4';
     resBox.style.border = '1px solid var(--err)';
@@ -7530,6 +7577,7 @@ async function reactivateScheduleStatus(id){
       sc.calendarEventId = resp.calendarEventId;
       saveLocalSchedules();
       renderAgendaTab();
+      showToast('Google Agenda atualizada!', 'ok');
     }
   }catch(e){}
 }
@@ -9077,6 +9125,7 @@ async function submitEditSchedule(id){
       sc.calendarEventId = resp.calendarEventId;
       saveLocalSchedules();
       renderAgendaTab();
+      showToast('Google Agenda atualizada!', 'ok');
     }
   }catch(err){
     console.warn('Aviso ao sincronizar edição de agendamento:', err);
@@ -9585,9 +9634,21 @@ function openScheduleInGCalUrl(id){
   var sc = schedules.find(function(x){ return x.id === id; });
   if(!sc) return;
 
+  var calId = getUserCalendarId();
+
+  // Se o agendamento já está sincronizado automaticamente no Google Agenda, abre diretamente o dia na agenda
+  if(sc.calendarEventId && sc.data){
+    var dParts = sc.data.split('-');
+    if(dParts.length === 3){
+      var dayUrl = 'https://calendar.google.com/calendar/r/day/' + dParts[0] + '/' + parseInt(dParts[1], 10) + '/' + parseInt(dParts[2], 10);
+      if(calId) dayUrl += '?authuser=' + encodeURIComponent(calId);
+      window.open(dayUrl, '_blank');
+      return;
+    }
+  }
+
   // Se ainda não tiver ID remoto de evento, dispara sincronização com Apps Script em background
   if(!sc.calendarEventId && scriptUrl() !== 'demo'){
-    var calId = getUserCalendarId();
     if(calId){
       var isBlock = sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio';
       var horaClean = (!sc.hora || sc.hora === 'Dia Inteiro' || sc.duracaoMin >= 720) ? '08:00' : sc.hora;
@@ -9614,6 +9675,7 @@ function openScheduleInGCalUrl(id){
           sc.calendarId = calId;
           saveLocalSchedules();
           renderAgendaTab();
+          showToast('Sincronizado com o Google Agenda!', 'ok');
         }
       }).catch(function(e){ console.warn('Aviso ao sincronizar evento avulso:', e); });
     }
