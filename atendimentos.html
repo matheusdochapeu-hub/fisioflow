@@ -1225,6 +1225,7 @@
           <div id="gcalBannerDesc" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;line-height:1.45;">Vincule seu e-mail do Google Agenda para sincronizar atendimentos automaticamente no seu celular.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button id="gcalBannerBtn" class="btn small ghost" style="width:auto;" onclick="openCalendarSettingsModal()">&#128279; Vincular Minha Agenda</button>
+            <button id="gcalSyncAllBtn" class="btn small ghost" style="width:auto;display:none;" onclick="syncAllSchedulesWithGCal()" title="Sincronizar todos os agendamentos com o Google Agenda">&#128259; Sincronizar Tudo</button>
             <button id="agendaExportIcsBtn" class="btn small ghost" style="width:auto;display:none;" onclick="exportSchedulesICS()" title="Baixar arquivo de calendário (.ics)">&#128197; Exportar .ICS</button>
           </div>
         </div>
@@ -1479,7 +1480,7 @@ function getActiveUsuarioId(){
   if(config && config.usuarioId) return config.usuarioId;
   return localStorage.getItem('ff_usuario_id') || '';
 }
-var DEFAULT_CALENDAR_ID = 'primary';
+var DEFAULT_CALENDAR_ID = '';
 var DEFAULT_HOME_ADDRESS = '';
 var DEFAULT_CAR_KM_PER_LITER = 12;
 var DEFAULT_GAS_PRICE = 5.80;
@@ -6367,12 +6368,39 @@ function receiptHeader(doc, title){
    ABA 4: AGENDA & INTEGRAÇÃO GOOGLE AGENDA (CalendarApp)
    ============================================================ */
 function getUserCalendarId(){
-  if(config && config.calendarId) return String(config.calendarId).trim();
-  try{
-    var saved = String(localStorage.getItem('ff_calendar_id') || '').trim();
-    if(saved) return saved;
-  }catch(e){}
-  return (typeof DEFAULT_CALENDAR_ID !== 'undefined' && DEFAULT_CALENDAR_ID) ? DEFAULT_CALENDAR_ID : '';
+  var cal = '';
+  if(config && config.calendarId) cal = String(config.calendarId).trim();
+  if(!cal || cal.toLowerCase() === 'primary'){
+    try{
+      cal = String(localStorage.getItem('ff_calendar_id') || '').trim();
+    }catch(e){}
+  }
+  if(!cal || cal.toLowerCase() === 'primary'){
+    try{
+      var googleEmail = String(localStorage.getItem('ff_google_user_email') || '').trim();
+      if(googleEmail && googleEmail.indexOf('@') > -1) cal = googleEmail;
+    }catch(e){}
+  }
+  if(!cal || cal.toLowerCase() === 'primary'){
+    try{
+      var devAuth = String(localStorage.getItem('ff_dev_auth_email') || '').trim();
+      if(devAuth && devAuth.indexOf('@') > -1) cal = devAuth;
+    }catch(e){}
+  }
+  if(!cal || cal.toLowerCase() === 'primary'){
+    if(config && config.contactEmail && config.contactEmail.indexOf('@') > -1){
+      cal = String(config.contactEmail).trim();
+    }
+  }
+  if(!cal || cal.toLowerCase() === 'primary'){
+    if(config && config.usuarioId && config.usuarioId.indexOf('@') > -1){
+      cal = String(config.usuarioId).trim();
+    }
+  }
+  if(cal && cal.toLowerCase() !== 'primary'){
+    return cal;
+  }
+  return '';
 }
 
 function updateGCalBannerUI(){
@@ -6382,22 +6410,32 @@ function updateGCalBannerUI(){
   var title = document.getElementById('gcalBannerTitle');
   var desc = document.getElementById('gcalBannerDesc');
   var btn = document.getElementById('gcalBannerBtn');
+  var syncAllBtn = document.getElementById('gcalSyncAllBtn');
   var icsBtn = document.getElementById('agendaExportIcsBtn');
   if(!title || !desc || !btn) return;
 
+  if(box) box.classList.remove('hidden');
+
   if(calId){
-    if(box) box.classList.add('hidden');
+    if(box){
+      box.classList.remove('disconnected');
+      box.classList.add('linked');
+    }
     if(dot) dot.classList.add('linked');
     title.innerHTML = 'Google Agenda: <b style="color:var(--success-ink);">' + escapeHtml(calId) + '</b>';
-    desc.textContent = 'Novos agendamentos, remarcações e cancelamentos são sincronizados automaticamente com sua agenda.';
-    btn.innerHTML = '⚙️ Alterar Agenda';
-    return;
+    desc.textContent = 'Novos agendamentos, remarcações e ausências são sincronizados com ' + calId + '.';
+    btn.innerHTML = '⚙️ Configurar / Alterar Agenda';
+    if(syncAllBtn) syncAllBtn.style.display = 'inline-flex';
   } else {
-    if(box) box.classList.add('disconnected');
+    if(box){
+      box.classList.remove('linked');
+      box.classList.add('disconnected');
+    }
     if(dot) dot.classList.remove('linked');
     title.innerHTML = 'Google Agenda: <span style="color:var(--ink-soft);font-weight:500;">Não vinculada</span>';
-    desc.textContent = 'Vincule seu e-mail do Google Agenda para sincronizar seus atendimentos automaticamente no celular.';
+    desc.textContent = 'Vincule seu e-mail do Google Agenda (Gmail) para sincronizar atendimentos automaticamente no seu celular.';
     btn.innerHTML = '🔗 Vincular Minha Agenda';
+    if(syncAllBtn) syncAllBtn.style.display = 'none';
   }
   if(icsBtn){
     icsBtn.style.display = schedules.length > 0 ? 'inline-flex' : 'none';
@@ -6488,8 +6526,11 @@ function openCalendarSettingsModal(){
       '<div id="calTestResultBox" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-xs);font-size:12px;line-height:1.4;"></div>' +
 
       '<div class="btn-row" style="margin-top:16px;">' +
-        '<button class="btn ghost" type="button" onclick="testGoogleCalendarConnection()">🔍 Testar Agenda</button>' +
-        '<button class="btn primary" type="button" onclick="saveCalendarSettings()">Salvar Configurações</button>' +
+        '<button class="btn ghost" type="button" onclick="testGoogleCalendarConnection()">🔍 Testar Conexão</button>' +
+        '<button class="btn ghost" type="button" onclick="syncAllSchedulesWithGCal()">🔄 Sincronizar Tudo</button>' +
+      '</div>' +
+      '<div class="btn-row" style="margin-top:8px;">' +
+        '<button class="btn primary" type="button" style="width:100%;" onclick="saveCalendarSettings()">Salvar Configurações</button>' +
       '</div>' +
       '<div class="btn-row" style="margin-top:8px;">' +
         '<button class="btn ghost" type="button" style="width:100%;" onclick="closeModal()">Fechar</button>' +
@@ -6533,6 +6574,7 @@ async function testGoogleCalendarConnection(){
 function saveCalendarSettings(){
   var inp = document.getElementById('modalCalendarIdInput');
   var calId = inp ? inp.value.trim() : '';
+  if(calId.toLowerCase() === 'primary') calId = '';
   var homeInp = document.getElementById('modalHomeAddressInput');
   var homeAddr = (homeInp && homeInp.value.trim()) ? homeInp.value.trim() : DEFAULT_HOME_ADDRESS;
   var kmlInp = document.getElementById('modalCarKmlInput');
@@ -6541,7 +6583,8 @@ function saveCalendarSettings(){
   var gasVal = (gasInp && parseFloat(gasInp.value) > 0) ? parseFloat(gasInp.value) : DEFAULT_GAS_PRICE;
 
   try{
-    localStorage.setItem('ff_calendar_id', calId);
+    if(calId) localStorage.setItem('ff_calendar_id', calId);
+    else localStorage.removeItem('ff_calendar_id');
     localStorage.setItem('ff_home_address', homeAddr);
     localStorage.setItem('ff_car_kml', String(kmlVal));
     localStorage.setItem('ff_gas_price', String(gasVal));
@@ -6577,7 +6620,13 @@ function saveCalendarSettings(){
   updateGCalBannerUI();
   renderAgendaTab();
   closeModal();
-  showToast('Configurações de agenda e rota salvas e sincronizadas!', 'ok');
+
+  if(calId && schedules.some(function(s){ return s && s.status !== 'Cancelado' && !s.calendarEventId; })){
+    showToast('Configurações salvas! Sincronizando agendamentos...', 'ok');
+    syncAllSchedulesWithGCal(true);
+  } else {
+    showToast('Configurações de agenda e rota salvas!', 'ok');
+  }
 }
 
 /* ============================================================
@@ -7343,6 +7392,7 @@ function renderAgendaTab(){
             (sc.observacao ? '<div style="margin-top:4px;font-size:12px;color:#92400e;line-height:1.4;">Motivo: ' + escapeHtml(sc.observacao) + '</div>' : '') +
           '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;margin-top:4px;">' +
+            '<button class="btn small ghost" style="padding:5px 10px;font-size:11px;" onclick="openScheduleInGCalUrl(\'' + sc.id + '\')" title="Ver ou sincronizar no Google Agenda">📅 Google Agenda</button>' +
             '<button class="btn small danger" style="padding:5px 10px;font-size:11px;" onclick="deleteVacationSchedule(\'' + sc.id + '\')" title="Remover este bloqueio da agenda">&#10005; Excluir Ausência</button>' +
           '</div>' +
         '</div>' +
@@ -8888,24 +8938,32 @@ async function submitVacationBlock(){
       try{
         var resp = null;
         if(itemsToCreate.length === 1){
-          resp = await postAction({
+          var singlePayload = Object.assign({
             action: 'create_schedule',
-            item: itemsToCreate[0]
-          });
-          if(resp && resp.eventId){
-            itemsToCreate[0].calendarEventId = resp.eventId;
+            calendarId: calId
+          }, itemsToCreate[0], { item: itemsToCreate[0] });
+          resp = await postAction(singlePayload);
+          var evId = (resp && (resp.calendarEventId || resp.eventId)) || '';
+          if(evId){
+            itemsToCreate[0].calendarEventId = evId;
             saveLocalSchedules();
             renderAgendaTab();
           }
         } else {
           resp = await postAction({
             action: 'create_schedules_batch',
+            calendarId: calId,
             items: itemsToCreate
           });
-          if(resp && resp.eventIds){
-            itemsToCreate.forEach(function(it){
-              if(resp.eventIds[it.id]) it.calendarEventId = resp.eventIds[it.id];
-            });
+          var evMap = (resp && (resp.eventMap || resp.eventIds)) || {};
+          var anyEv = false;
+          itemsToCreate.forEach(function(it){
+            if(evMap[it.id]){
+              it.calendarEventId = evMap[it.id];
+              anyEv = true;
+            }
+          });
+          if(anyEv){
             saveLocalSchedules();
             renderAgendaTab();
           }
@@ -9042,14 +9100,19 @@ async function completeScheduleCheckin(id, silentToast){
 }
 
 function buildGCalTemplateUrl(sc){
-  var dispName = getSchedulePatientDisplayName(sc);
-  var pObj = getSchedulePatientObj(sc);
-  var title = (sc.status === 'Realizado' ? '✓ ' : '') + 'Fisioterapia - ' + dispName;
+  var isBlock = sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio';
+  var dispName = isBlock ? (sc.pacienteNome || 'Ausência / Férias') : getSchedulePatientDisplayName(sc);
+  var pObj = isBlock ? null : getSchedulePatientObj(sc);
+  var title = isBlock ? ('🏖️ ' + dispName) : ((sc.status === 'Realizado' ? '✓ ' : '') + 'Fisioterapia - ' + dispName);
 
   var dateClean = String(sc.data || isoDate(new Date())).replace(/-/g, '');
-  var hParts = String(sc.hora || '14:00').split(':');
-  var hh = parseInt(hParts[0], 10); if(isNaN(hh)) hh = 14;
+  var horaClean = (!sc.hora || sc.hora === 'Dia Inteiro' || sc.duracaoMin >= 720) ? '08:00' : sc.hora;
+  var hParts = horaClean.split(':');
+  var hh = parseInt(hParts[0], 10); if(isNaN(hh)) hh = isBlock ? 8 : 14;
   var mm = parseInt(hParts[1], 10); if(isNaN(mm)) mm = 0;
+
+  var dur = parseInt(sc.duracaoMin, 10);
+  if(isNaN(dur) || dur <= 0) dur = isBlock ? 720 : 50;
 
   var startDt = new Date(
     parseInt(dateClean.substring(0,4), 10),
@@ -9057,7 +9120,6 @@ function buildGCalTemplateUrl(sc){
     parseInt(dateClean.substring(6,8), 10),
     hh, mm, 0
   );
-  var dur = parseInt(sc.duracaoMin, 10) || 50;
   var endDt = new Date(startDt.getTime() + dur * 60000);
 
   function fmtLocalGCal(d){
@@ -9071,8 +9133,9 @@ function buildGCalTemplateUrl(sc){
     if(pObj.bairro) locParts.push(pObj.bairro);
     if(pObj.cidade) locParts.push(pObj.cidade);
   }
-  var details = 'Atendimento domiciliar de fisioterapia — ' + dispName;
-  if(sc.observacao) details += '\nObs: ' + sc.observacao;
+  var details = isBlock
+    ? ('Bloqueio de agenda / ausência: ' + (sc.observacao || dispName))
+    : ('Atendimento domiciliar de fisioterapia — ' + dispName + (sc.observacao ? ('\nObs: ' + sc.observacao) : ''));
 
   var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
     '&text=' + encodeURIComponent(title) +
@@ -9088,7 +9151,126 @@ function buildGCalTemplateUrl(sc){
 function openScheduleInGCalUrl(id){
   var sc = schedules.find(function(x){ return x.id === id; });
   if(!sc) return;
+
+  // Se ainda não tiver ID remoto de evento, dispara sincronização com Apps Script em background
+  if(!sc.calendarEventId && scriptUrl() !== 'demo'){
+    var calId = getUserCalendarId();
+    if(calId){
+      var isBlock = sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio';
+      var horaClean = (!sc.hora || sc.hora === 'Dia Inteiro' || sc.duracaoMin >= 720) ? '08:00' : sc.hora;
+      var pObj = isBlock ? null : getSchedulePatientObj(sc);
+      var payload = {
+        action: 'create_schedule',
+        id: sc.id,
+        pacienteId: sc.pacienteId || '',
+        pacienteNome: isBlock ? (sc.pacienteNome || 'Ausência / Férias') : getSchedulePatientDisplayName(sc),
+        pacienteDisplay: isBlock ? (sc.pacienteNome || 'Ausência / Férias') : getSchedulePatientDisplayName(sc),
+        data: sc.data,
+        hora: horaClean,
+        duracaoMin: sc.duracaoMin || (isBlock ? 720 : 50),
+        status: sc.status || 'Agendado',
+        observacao: sc.observacao || '',
+        calendarId: calId,
+        telefone: pObj ? (pObj.telefone || '') : '',
+        endereco: pObj ? getPatientFullAddress(pObj) : ''
+      };
+      postAction(payload).then(function(resp){
+        var evId = (resp && (resp.calendarEventId || resp.eventId)) || '';
+        if(evId){
+          sc.calendarEventId = evId;
+          sc.calendarId = calId;
+          saveLocalSchedules();
+          renderAgendaTab();
+        }
+      }).catch(function(e){ console.warn('Aviso ao sincronizar evento avulso:', e); });
+    }
+  }
+
   window.open(buildGCalTemplateUrl(sc), '_blank');
+}
+
+async function syncAllSchedulesWithGCal(silent){
+  var calId = getUserCalendarId();
+  if(!calId){
+    if(!silent){
+      alert('Para sincronizar com o Google Agenda, informe primeiro seu e-mail do Gmail.');
+      openCalendarSettingsModal();
+    }
+    return;
+  }
+
+  // Filtrar agendamentos ativos (não cancelados)
+  var activeSchedules = schedules.filter(function(s){
+    return s && s.data && s.status !== 'Cancelado';
+  });
+
+  if(activeSchedules.length === 0){
+    if(!silent) showToast('Não há agendamentos ativos para sincronizar.', 'info');
+    return;
+  }
+
+  if(!silent) showToast('Sincronizando ' + activeSchedules.length + ' agendamento(s) com o Google Agenda...', 'info');
+
+  try{
+    var batchItems = activeSchedules.map(function(sc){
+      var isBlock = sc.pacienteId === '__BLOQUEIO__' || sc.status === 'Ausência' || sc.status === 'Férias' || sc.tipo === 'Bloqueio';
+      var horaClean = (!sc.hora || sc.hora === 'Dia Inteiro' || sc.duracaoMin >= 720) ? '08:00' : sc.hora;
+      var dur = (isBlock && (!sc.duracaoMin || sc.duracaoMin < 720)) ? 720 : (sc.duracaoMin || 50);
+
+      var pObj = isBlock ? null : getSchedulePatientObj(sc);
+      var dispName = isBlock ? (sc.pacienteNome || 'Ausência / Férias') : getSchedulePatientDisplayName(sc);
+      var patTel = pObj ? (pObj.telefone || '') : '';
+      var patEnd = pObj ? getPatientFullAddress(pObj) : '';
+
+      return {
+        id: sc.id,
+        pacienteId: sc.pacienteId || '',
+        pacienteNome: dispName,
+        pacienteDisplay: dispName,
+        data: sc.data,
+        hora: horaClean,
+        duracaoMin: dur,
+        valor: sc.valor !== undefined ? sc.valor : '',
+        status: sc.status || 'Agendado',
+        observacao: sc.observacao || '',
+        calendarEventId: sc.calendarEventId || '',
+        calendarId: calId,
+        telefone: patTel,
+        endereco: patEnd,
+        atendimentoId: sc.atendimentoId || ''
+      };
+    });
+
+    var resp = await postAction({
+      action: 'create_schedules_batch',
+      calendarId: calId,
+      items: batchItems
+    });
+
+    var evMap = (resp && (resp.eventMap || resp.eventIds)) || {};
+    var synced = 0;
+    activeSchedules.forEach(function(sc){
+      if(evMap[sc.id]){
+        sc.calendarEventId = evMap[sc.id];
+        sc.calendarId = calId;
+        synced++;
+      }
+    });
+
+    saveLocalSchedules();
+    renderAgendaTab();
+    updateGCalBannerUI();
+
+    var count = (resp && typeof resp.calendarSyncedCount === 'number') ? resp.calendarSyncedCount : synced;
+    if(!silent){
+      showToast('✅ ' + count + ' agendamento(s) sincronizados com o Google Agenda (' + calId + ')!', 'ok');
+    }
+  }catch(err){
+    console.warn('Erro ao sincronizar agendamentos em lote:', err);
+    if(!silent){
+      showToast('⚠️ Erro ao sincronizar: ' + (err.message || err), 'err');
+    }
+  }
 }
 
 function exportSchedulesICS(){
@@ -9537,17 +9719,15 @@ async function init(){
     try{ localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }catch(e){}
   }
 
-  // Define a agenda padrão caso ainda não tenha sido configurada
-  if(config && !config.calendarId && DEFAULT_CALENDAR_ID){
-    config.calendarId = DEFAULT_CALENDAR_ID;
-    try{
-      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-    }catch(e){}
+  // Limpeza de 'primary': a agenda precisa ser o e-mail real do usuário (ex: Gmail) para receber os convites e sincronizar
+  if(config && config.calendarId && String(config.calendarId).toLowerCase() === 'primary'){
+    config.calendarId = '';
+    try{ localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }catch(e){}
   }
   try{
     var savedCal = localStorage.getItem('ff_calendar_id');
-    if(!savedCal && DEFAULT_CALENDAR_ID){
-      localStorage.setItem('ff_calendar_id', DEFAULT_CALENDAR_ID);
+    if(savedCal && String(savedCal).toLowerCase() === 'primary'){
+      localStorage.removeItem('ff_calendar_id');
     }
   }catch(e){}
 
@@ -9815,6 +9995,9 @@ function verificarModoDev(){
   } else if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
     autorizado = true;
   } else if (config && config.calendarId && DEV_AUTHORIZED_EMAILS.indexOf(config.calendarId.toLowerCase()) > -1) {
+    autorizado = true;
+    try { sessionStorage.setItem(DEV_SESSION_KEY, '1'); } catch(e){}
+  } else if (getUserCalendarId() && DEV_AUTHORIZED_EMAILS.indexOf(getUserCalendarId().toLowerCase()) > -1) {
     autorizado = true;
     try { sessionStorage.setItem(DEV_SESSION_KEY, '1'); } catch(e){}
   }

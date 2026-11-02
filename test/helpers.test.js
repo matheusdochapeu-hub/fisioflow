@@ -262,5 +262,89 @@ describe('Rapid Clinical Helpers', () => {
   });
 });
 
+describe('Google Calendar Integration Helpers', () => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  test('getUserCalendarId purges primary and falls back to configured email', () => {
+    const mockStorage = {
+      getItem(key) {
+        if (key === 'ff_calendar_id') return 'primary';
+        if (key === 'ff_google_user_email') return 'corredoresantifascistas@gmail.com';
+        return null;
+      }
+    };
+    const mockConfig = { calendarId: 'primary' };
+    const getUserCalendarIdFn = extractFnWithScope('getUserCalendarId', {
+      config: mockConfig,
+      localStorage: mockStorage
+    });
+
+    const resolved = getUserCalendarIdFn();
+    assert.equal(resolved, 'corredoresantifascistas@gmail.com');
+    assert.notEqual(resolved.toLowerCase(), 'primary');
+  });
+
+  test('buildGCalTemplateUrl formats patient session correctly with authuser', () => {
+    const getSchedulePatientDisplayName = (sc) => sc.pacienteNome || 'Dona Maria';
+    const getSchedulePatientObj = () => ({ endereco: 'Rua das Flores, 123', bairro: 'Centro', cidade: 'Ribeirão Preto' });
+    const getUserCalendarId = () => 'corredoresantifascistas@gmail.com';
+
+    const buildGCalTemplateUrlFn = extractFnWithScope('buildGCalTemplateUrl', {
+      getSchedulePatientDisplayName,
+      getSchedulePatientObj,
+      getUserCalendarId,
+      isoDate,
+      pad
+    });
+
+    const sc = {
+      id: 'sc1',
+      pacienteNome: 'Dona Maria',
+      data: '2026-11-10',
+      hora: '14:00',
+      duracaoMin: 50,
+      status: 'Agendado'
+    };
+
+    const url = buildGCalTemplateUrlFn(sc);
+    assert.match(url, /calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
+    assert.match(url, /text=Fisioterapia%20-%20Dona%20Maria/);
+    assert.match(url, /dates=20261110T140000%2F20261110T145000/);
+    assert.match(url, /authuser=corredoresantifascistas%40gmail\.com/);
+  });
+
+  test('buildGCalTemplateUrl formats vacation block with all-day start and duration', () => {
+    const getSchedulePatientDisplayName = () => '🏖️ Férias';
+    const getSchedulePatientObj = () => null;
+    const getUserCalendarId = () => 'corredoresantifascistas@gmail.com';
+
+    const buildGCalTemplateUrlFn = extractFnWithScope('buildGCalTemplateUrl', {
+      getSchedulePatientDisplayName,
+      getSchedulePatientObj,
+      getUserCalendarId,
+      isoDate,
+      pad
+    });
+
+    const scVac = {
+      id: 'vac1',
+      pacienteId: '__BLOQUEIO__',
+      pacienteNome: '🏖️ Férias',
+      data: '2026-11-15',
+      hora: '08:00',
+      duracaoMin: 720,
+      status: 'Ausência',
+      observacao: 'Congresso de Fisioterapia'
+    };
+
+    const urlVac = buildGCalTemplateUrlFn(scVac);
+    assert.match(urlVac, /calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
+    assert.match(urlVac, /dates=20261115T080000%2F20261115T200000/);
+    assert.match(urlVac, /Congresso%20de%20Fisioterapia/);
+  });
+});
+
+
 
 

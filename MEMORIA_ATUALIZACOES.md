@@ -1,11 +1,37 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v16` (`sw.js`)
+Versão do Service Worker: `fisioflow-v17` (`sw.js`)
 
 ---
 
-## 5. Correção do Botão Férias, UX Harmonizada da Agenda e Banner Google Agenda Recolhido (`v16`)
+## 6. Sincronização Completa com o Google Agenda, Correção de 'primary' e Sincronização em Lote (`v17`)
+- **Eliminação da Armadilha do CalendarId `'primary'`:**
+  - `DEFAULT_CALENDAR_ID` alterado de `'primary'` para `''`.
+  - `getUserCalendarId()` atualizado para descartar estritamente o valor `'primary'` (que no Google Apps Script grava os eventos apenas na agenda da conta criadora do script sem convidar o usuário, deixando o celular do fisioterapeuta vazio).
+  - Resolução automática em cascata da conta real do usuário: prioriza `config.calendarId`, `localStorage.ff_calendar_id`, e-mail de login Google (`ff_google_user_email`), autenticação dev (`ff_dev_auth_email`) ou `config.usuarioId` / `config.contactEmail`.
+  - Limpeza automática e higienização durante a inicialização do app (`init`): qualquer valor `'primary'` salvo anteriormente é purgado do `config` e do `localStorage`.
+- **Sincronização em Lote com Google Agenda (`syncAllSchedulesWithGCal`):**
+  - Adicionado botão interativo `[🔄 Sincronizar Tudo]` no banner recolhido da Agenda e no modal de configurações de agenda e rotas.
+  - Sincroniza todos os agendamentos ativos e blocos de férias com o Google Agenda em uma única requisição em lote (`create_schedules_batch`), vinculando os IDs retornados (`calendarEventId`) no estado local e salvando no `localStorage`.
+  - Ao salvar o e-mail no modal `openCalendarSettingsModal`, se houver agendamentos ainda não sincronizados, o disparo ocorre de forma automatizada e transparente para o profissional.
+- **Correção da Criação e Sincronização de Férias e Ausências:**
+  - Corrigido o envio de horários para dias inteiros em `submitVacationBlock`: envio padronizado de `hora: '08:00'` e `duracaoMin: 720` para a API, eliminando o erro de parsing `NaN:NaN` e a mensagem *"Data/hora inválida para o Google Agenda"*.
+  - Payload achatado em `create_schedule` e `create_schedules_batch`, garantindo compatibilidade total com o endpoint central do Apps Script.
+  - Adicionado botão `[📅 Google Agenda]` nos cards de ausência da visão diária para abertura direta no Google Agenda ou sincronização instantânea.
+- **Melhoria no Gerador de Links Web do Google Agenda (`buildGCalTemplateUrl` e `openScheduleInGCalUrl`):**
+  - Formatação inteligente de datas, horários e títulos tanto para sessões de fisioterapia domiciliar quanto para bloqueios de agenda/férias.
+  - Parâmetro `&authuser=` vinculado ao e-mail real do usuário para abrir diretamente no perfil correto do Google Calendar web/app.
+  - Sincronização em segundo plano caso o usuário clique no botão e o agendamento ainda não tenha ID de evento registrado.
+- **Banner Retrátil Visível e Funcional:**
+  - Corrigido bug onde o banner recolhido recebia `.hidden` ao vincular e sumia da tela. Agora o elemento `<details>` permanece como barra discreta de ~36px indicando o e-mail conectado (ex.: `corredoresantifascistas@gmail.com`), com dot verde pulsante e botão de configurações.
+- **Área do Desenvolvedor & Reconhecimento de Usuário Dev:**
+  - Auto-autorização imediata para o e-mail `corredoresantifascistas@gmail.com` e `matheusdochapeu@gmail.com` na inicialização.
+  - Acesso direto via parâmetro de URL (`?dev=admin`, `?dev=fisioflow2026`) ou pelo link no rodapé com senha de desenvolvedor.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v17` em `sw.js`.
+  - 29 testes unitários automatizados passando com 100% de sucesso (`node --test fisioflow/test/*.test.js`).
+
 - **Correção e Salvamento Local-First do Modal de Férias e Ausências (`openVacationModal` / `submitVacationBlock`):**
   - Modal estruturado estritamente no padrão de modais do app (`.modal-bg` com backdrop blur + `.modal` com `.grabber`), responsivo em dispositivos móveis.
   - Salvamento otimista imediato (`local-first`) no array `schedules` e no `localStorage`, fechamento instantâneo do modal, renderização atualizada da grade e notificação toast com sucesso.
