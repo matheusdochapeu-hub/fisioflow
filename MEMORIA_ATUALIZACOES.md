@@ -1,7 +1,23 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v26` (`sw.js`)
+Versão do Service Worker: `fisioflow-v27` (`sw.js`)
+
+---
+
+## 14. Preparação e Homologação para Disponibilização a Terceiros (`v27`)
+- **Limpeza e Desvinculação de Dados Pessoais do Desenvolvedor:**
+  - Substituído o fallback legado de nome do profissional em cabeçalhos de recibos (`receiptHeader`) de `'Matheus'` para o termo neutro `'Profissional'`.
+  - Garantida a neutralidade absoluta nos campos de endereço inicial (`DEFAULT_HOME_ADDRESS = ''`) e agenda inicial (`DEFAULT_CALENDAR_ID = ''`).
+- **Aprimoramento do Onboarding para Novos Usuários:**
+  - Adicionado botão de acesso direto ao **Modo Demonstração** na tela de configuração inicial (`#setupScreen`), permitindo a fisioterapeutas avaliarem prontuários, cálculos de rota e controle financeiro imediatamente sem necessidade de cadastro prévio.
+  - Conexão e sincronização direta com a Google Agenda em 1 clique (OAuth v3) e geração de link privado para feed iCalendar (.ics).
+- **Documentação de Distribuição e Implantação:**
+  - Criação do [`DEPLOY.md`](DEPLOY.md) com o passo a passo completo para publicação no GitHub Pages e configuração do backend multi-inquilino no Google Apps Script.
+  - Atualização do [`README.md`](README.md) detalhando os novos recursos e o processo de onboarding para terceiros.
+- **Service Worker & Testes Automatizados:**
+  - Cache atualizado para `fisioflow-v27` em `sw.js`.
+  - Suíte de testes automatizada expandida para 60 testes passando com 100% de sucesso.
 
 ---
 

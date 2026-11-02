@@ -77,17 +77,20 @@ Todos os dados ficam armazenados de forma **gratuita, segura e privada** na pró
 
 O FisioFlow foi desenhado para que qualquer fisioterapeuta possa começar a usar **em menos de 10 segundos**, sem precisar entender nada de programação, Google Apps Script ou APIs:
 
-1. **Primeiro Acesso em 1 Clique**:
+1. **Primeiro Acesso em 1 Clique (ou Modo Demonstração)**:
    - O fisioterapeuta abre o link do app no celular ou computador.
-   - Preenche: **Nome completo**, **CREFITO/CPF**, **E-mail do Gmail**, **Endereço Base / Consultório** e parâmetros do veículo.
-   - Clica em **"🚀 Conectar e Criar Minha Planilha"**.
+   - Pode clicar diretamente em **"🎯 Testar primeiro no Modo Demonstração"** para navegar imediatamente com dados fictícios.
+   - Para criar seu ambiente de produção: preenche **Nome completo**, **E-mail do Google (Gmail)**, **CREFITO/CPF** (opcional) e **Endereço Base / Consultório**.
+   - Clica em **"🚀 Começar Agora (Criar Minha Planilha Grátis)"**.
 2. **Criação e Compartilhamento Automático no Google Drive**:
    - O backend cria instantaneamente uma planilha dedicada exclusiva para esse profissional (`FisioFlow — Dra. [Nome]`).
    - Compartilha a planilha diretamente com o e-mail do Gmail informado como **Editor** — o fisioterapeuta pode abrir o Google Drive dele e ver a planilha em "Compartilhados comigo".
 3. **Persistência de Configurações no Google Sheets**:
    - Todos os dados da aba de Configurações (dados profissionais, endereço do consultório, consumo do carro) são sincronizados em uma aba dedicada `Configuracao` da planilha.
-4. **Google Agenda Integrada**:
-   - Os agendamentos criados no FisioFlow convidam e sincronizam diretamente com a Google Agenda do celular do profissional.
+4. **Google Agenda Integrada (1-Clique OAuth & Live iCal Feed)**:
+   - **Conexão em 1 Clique (Google OAuth v3)**: com apenas um toque no botão *"Conectar Minha Google Agenda"*, os agendamentos, reagendamentos, cancelamentos e períodos de férias são enviados e sincronizados diretamente com o Google Calendar do celular do profissional, sem necessidade de compartilhar calendários ou configurações manuais.
+   - **Feed ao Vivo (iCal / .ics)**: link de assinatura privada permanente para sincronizar com Google Agenda, Apple Calendar (iPhone/Mac) ou Outlook com atualizações contínuas.
+   - **Abertura Direta do Dia**: o botão *"📅 Google Agenda"* no card de agendamento abre diretamente o dia correspondente no aplicativo oficial do Google Agenda.
 5. **Link Direto nas Configurações**:
    - Em **Configurações ⚙️**, o profissional tem o botão **"📊 Abrir Minha Planilha no Google Drive ↗"** para auditar, imprimir ou exportar seus dados a qualquer momento.
 6. **✨ Modo Demonstração**:

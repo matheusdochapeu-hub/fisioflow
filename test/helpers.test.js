@@ -931,6 +931,41 @@ describe('Sincronização Multi-Dispositivo & Autoridade da Planilha', () => {
   });
 });
 
+describe('Third-Party Distribution & Onboarding Readiness', () => {
+  test('DEFAULT_CALENDAR_ID and DEFAULT_HOME_ADDRESS start completely empty', () => {
+    assert.match(html, /var DEFAULT_CALENDAR_ID = '';/);
+    assert.match(html, /var DEFAULT_HOME_ADDRESS = '';/);
+  });
+
+  test('receiptHeader falls back to generic "Profissional" when providerName is empty', () => {
+    const capturedTexts = [];
+    const fakeDoc = {
+      setFillColor() {},
+      rect() {},
+      setTextColor() {},
+      setFont() {},
+      setFontSize() {},
+      text(str) { capturedTexts.push(str); }
+    };
+    const receiptHeader = extractFnWithScope('receiptHeader', {
+      marcaDaguaOutono: () => {},
+      config: null
+    });
+    receiptHeader(fakeDoc, 'RECIBO');
+    assert.equal(capturedTexts.some(t => t.includes('Fisioterapeuta Responsável: Profissional')), true);
+  });
+
+  test('setup screen contains friendly 1-click Demo Mode test button', () => {
+    assert.equal(html.includes('ativarModoDemonstracao()'), true);
+    assert.equal(html.includes('Testar primeiro no Modo Demonstração'), true);
+  });
+
+  test('atendimentos.html does not contain hardcoded developer personal email in user fields', () => {
+    assert.equal(html.includes('matheusrodrigues1917@usp.br'), false);
+  });
+});
+
+
 
 
 
