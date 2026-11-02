@@ -730,6 +730,11 @@ function isInvalidPatientName_(name) {
   return false;
 }
 
+/** Nome Fantasia é opcional: vazio é aceito; só é rejeitado se preenchido com termo reservado. */
+function isInvalidOptionalName_(name) {
+  return !!String(name || '').trim() && isInvalidPatientName_(name);
+}
+
 function doGet(e) {
   var usuarioId = (e && e.parameter && e.parameter.usuarioId) || '';
   var targetSs = resolveSpreadsheet_(usuarioId, (e && e.parameter) || {});
@@ -737,7 +742,12 @@ function doGet(e) {
 
   var rawPac = sheetToObjects_(getPacSheet_());
   var cleanPac = rawPac.filter(function(p){
-    return !isInvalidPatientName_(p.Nome) && !isInvalidPatientName_(p.NomeFantasia);
+    return !isInvalidPatientName_(p.Nome) && !isInvalidOptionalName_(p.NomeFantasia);
+  });
+
+  var rawAgend = sheetToObjects_(getAgendSheet_());
+  var cleanAgend = rawAgend.filter(function(a){
+    return a && a.ID && a.Data;
   });
 
   var result = {
@@ -750,7 +760,7 @@ function doGet(e) {
     evolucoes: sheetToObjects_(getEvoSheet_()),
     exercicios: sheetToObjects_(getExeSheet_()),
     rotinas: sheetToObjects_(getRotSheet_()),
-    agendamentos: sheetToObjects_(getAgendSheet_())
+    agendamentos: cleanAgend
   };
   _currentSS_ = null;
   return ContentService.createTextOutput(JSON.stringify(result))
@@ -905,7 +915,10 @@ function doPost(e) {
 
     /* ---------- Pacientes ---------- */
     } else if (body.action === 'create_patient') {
-      if (isInvalidPatientName_(body.nome) || isInvalidPatientName_(body.nomeFantasia)) {
+      if (body.item && typeof body.item === 'object') {
+        Object.assign(body, body.item);
+      }
+      if (isInvalidPatientName_(body.nome) || isInvalidOptionalName_(body.nomeFantasia)) {
         result.success = false;
         result.error = 'Nome de paciente inválido: não é permitido cadastrar exercícios como pacientes.';
         return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
@@ -936,7 +949,11 @@ function doPost(e) {
       ]);
 
     } else if (body.action === 'update_patient') {
-      if (body.nome !== undefined && isInvalidPatientName_(body.nome)) {
+      if (body.item && typeof body.item === 'object') {
+        Object.assign(body, body.item);
+      }
+      if ((body.nome !== undefined && isInvalidPatientName_(body.nome)) ||
+          (body.nomeFantasia !== undefined && isInvalidOptionalName_(body.nomeFantasia))) {
         result.success = false;
         result.error = 'Nome de paciente inválido.';
         return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
@@ -1005,6 +1022,11 @@ function doPost(e) {
       if (body.item && typeof body.item === 'object') {
         Object.assign(body, body.item);
       }
+      if (!body.id || !body.data) {
+        result.success = false;
+        result.error = 'ID e Data são obrigatórios para agendamento.';
+        return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+      }
       var calRes = createCalendarEventForSchedule_(body);
       var evId = calRes.eventId || '';
       getAgendSheet_().appendRow([
@@ -1041,11 +1063,16 @@ function doPost(e) {
 
       items.forEach(function(it) {
         if (!it.calendarId && body.calendarId) it.calendarId = body.calendarId;
-        var cRes = createCalendarEventForSchedule_(it);
-        var cId = cRes.eventId || '';
+        var cRes;
+        if (it.calendarEventId) {
+          cRes = updateCalendarEventForSchedule_(it);
+        } else {
+          cRes = createCalendarEventForSchedule_(it);
+        }
+        var cId = (cRes && cRes.eventId) || it.calendarEventId || '';
         eventIds[it.id] = cId;
         if (cId) syncedCount++;
-        if (cRes.warning && warnings.indexOf(cRes.warning) === -1) warnings.push(cRes.warning);
+        if (cRes && cRes.warning && warnings.indexOf(cRes.warning) === -1) warnings.push(cRes.warning);
 
         if (existingMap[String(it.id)]) {
           if (cId) updateFieldById_(sAg, it.id, 'CalendarEventId', cId);
@@ -1076,6 +1103,9 @@ function doPost(e) {
       if (warnings.length > 0) result.calendarWarning = warnings.join('; ');
 
     } else if (body.action === 'update_schedule') {
+      if (body.item && typeof body.item === 'object') {
+        Object.assign(body, body.item);
+      }
       var sAgUpd = getAgendSheet_();
       var existingRow = getRowObjectById_(sAgUpd, body.id) || {};
       var agendFields = {};
@@ -1114,6 +1144,9 @@ function doPost(e) {
       if (updCal.warning) result.calendarWarning = updCal.warning;
 
     } else if (body.action === 'delete_schedule') {
+      if (body.item && typeof body.item === 'object') {
+        Object.assign(body, body.item);
+      }
       var sAgDel = getAgendSheet_();
       var deletedRow = deleteRowById_(sAgDel, body.id);
       var evIdToDel = body.calendarEventId || (deletedRow && deletedRow.CalendarEventId) || '';

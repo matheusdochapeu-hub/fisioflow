@@ -1,7 +1,34 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v22` (`sw.js`)
+Versão do Service Worker: `fisioflow-v23` (`sw.js`)
+
+---
+
+## 12. Correção de Conexão com Google Agenda, Modal de Férias e Resolução de Sumiço de Pacientes (`v23`)
+- **Ajustes e Blindagem do Modal de Férias / Ausência (`atendimentos.html`):**
+  - **Prevenção de travamento no campo de data:** Implementada `vacationSpanDays` e limite rigoroso de `VAC_MAX_DAYS = 120` dias por registro. Ao digitar anos parciais ou inválidos (ex.: `0002` ou `20267`), a função rejeita de imediato sem gerar arrays de datas gigantes que congelavam o navegador.
+  - **Verificação de conflitos sem laço de datas:** `getVacationConflicts(startIso, endIso)` utiliza comparação direta de strings ISO (`sc.data >= startIso && sc.data <= endIso`) ignorando agendamentos cancelados e bloqueios existentes (`isBlockSchedule`), executando em frações de milissegundo de forma imune a congelamentos.
+  - **Validação de horário de ausência:** Quando desmarcado "Dia inteiro", os horários inicial e final são validados estritamente para garantir que o término ocorra após o início.
+  - **Sincronização em segundo plano particionada (lotes de 10 dias):** Registro em lote dividido em blocos de 10 dias (`CHUNK = 10`), evitando tempo limite do Apps Script ou retenção prolongada do ScriptLock.
+  - **Envio de payload plano nos cancelamentos:** Correção no envio de cancelamento de conflitos com propriedades diretas no payload (`id`, `status: 'Cancelado'`, `observacao`, `calendarEventId`), eliminando falha silenciosa.
+- **Conexão e Sincronização com o Google Agenda (`Code.gs` e `atendimentos.html`):**
+  - **Eliminação de eventos duplicados:** Em `create_schedules_batch`, itens que já possuem `calendarEventId` agora acionam `updateCalendarEventForSchedule_` em vez de criar um novo evento duplicado a cada clique em *"Sincronizar Tudo"*.
+  - **Suporte transparente a propriedades encapsuladas (`body.item`):** `create_schedule`, `update_schedule` e `delete_schedule` no `Code.gs` agora desembrulham `body.item` caso enviado como objeto, compatibilizando chamadas do front-end.
+  - **Captura segura de ID do evento:** Validação tanto de `calendarEventId` quanto de `eventId` no retorno de criação e agendamento avulso, garantindo que o vínculo seja salvo no dispositivo para exclusões futuras.
+  - **Feedback aprimorado no teste de conexão:** `testGoogleCalendarConnection()` detalha o modo de sincronização (direto, compartilhado ou via link rápido) e orienta o usuário sobre o funcionamento.
+- **Correção Definitiva do Sumiço de Pacientes e Cadastro sem Nome Fantasia:**
+  - **Causa Raiz Corrigida:** O filtro `isInvalidPatientName_` no backend (`Code.gs`) e `isInvalidPatientName` no front-end tratavam `nomeFantasia` vazio como inválido, fazendo com que qualquer paciente sem apelido/nome fantasia fosse rejeitado na criação (`create_patient`) e omitido da listagem de dados (`doGet`), além de apagado do cache local.
+  - **Implementação de `isInvalidOptionalName_` e `isNonPatientRecord`:** `nomeFantasia` passa a ser estritamente opcional (vazio é aceito normalmente).
+  - **Persistência Offline Robusta (`getLocalPatients` / `saveLocalPatients`):** Pacientes criados localmente são mantidos no `localStorage` sob a chave `ff_local_patients`, impedindo que falhas de rede apaguem o cadastro do paciente recém-adicionado.
+  - **Auto-descoberta segura:** Pacientes em agendamentos ou atendimentos passados são integrados sem jamais promover rótulos de ausências (`🏖️ Férias`, etc.) a pacientes.
+- **Correções do Agendador e Rotas:**
+  - **Férias e ausências excluídas de rotas:** `isBlockSchedule` impede que blocos de férias entrem no cálculo de deslocamento entre atendimentos e no alerta de deslocamento da tela de agendamento (eliminando cartões indevidos como *"cadastre o endereço de 🏖️ Férias"*).
+  - **Validação de horário na sessão:** `submitSchedule` rejeita horários vazios antes de enviar, evitando eventos de dia inteiro inesperados no Google Agenda.
+  - **Eliminação de corrida no fechamento de modais (`_pendingBack`):** Evita que o evento assíncrono `popstate` feche imediatamente um novo modal aberto após `closeModal()`.
+- **Service Worker & Testes Automatizados:**
+  - Atualizado para `fisioflow-v23` em `sw.js`.
+  - 50 testes unitários automatizados passando com 100% de sucesso via `node --test test/*.test.js`.
 
 ---
 

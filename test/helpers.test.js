@@ -682,11 +682,24 @@ describe('Demo Mode & Sample Data Seeding', () => {
 });
 
 describe('Vacation & Absence Manager Helpers', () => {
+  const isValidIsoDay = extractFn('isValidIsoDay');
+  const vacationSpanDays = extractFnWithScope('vacationSpanDays', { isValidIsoDay });
+  const VAC_MAX_DAYS = 120;
   const getVacationDatesRange = extractFnWithScope('getVacationDatesRange', {
+    vacationSpanDays,
+    VAC_MAX_DAYS,
     isoDate: (d) => {
       const pad = (n) => String(n).padStart(2, '0');
       return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     }
+  });
+
+  test('vacationSpanDays validates ISO format, order and day count', () => {
+    assert.equal(vacationSpanDays('2026-11-02', '2026-11-02'), 1);
+    assert.equal(vacationSpanDays('2026-11-02', '2026-11-10'), 9);
+    assert.equal(vacationSpanDays('2026-11-10', '2026-11-02'), -1);
+    assert.equal(vacationSpanDays('20267-11-02', '2026-11-02'), -1);
+    assert.equal(vacationSpanDays('invalid', '2026-11-02'), -1);
   });
 
   test('getVacationDatesRange returns continuous list of ISO date strings', () => {
@@ -706,7 +719,42 @@ describe('Vacation & Absence Manager Helpers', () => {
 
   test('getVacationDatesRange enforces safety cap avoiding browser lockup', () => {
     const massive = getVacationDatesRange('2026-01-01', '2030-01-01');
-    assert.ok(massive.length <= 366, 'Must cap at maximum 366 days');
+    assert.equal(massive.length, 0, 'Exceeding VAC_MAX_DAYS must return empty array avoiding browser freeze');
+    assert.equal(getVacationDatesRange('2026-01-01', '2026-04-30').length, 120);
+  });
+});
+
+describe('Pacientes sem Nome Fantasia, sanitização e bloqueios de agenda', () => {
+  const normName = extractFn('normName');
+  const NON_PATIENT_NAMES = ['agachamento', 'flexao', 'prancha', 'exercicio', 'rotina', 'alongamento', '__bloqueio__', 'bloqueio', 'ausencia', 'ferias'];
+  const BLOCK_LABELS = ['ferias', 'folga / recesso', 'congresso / curso', 'atestado / saude', 'atestado medico', 'feriado', 'bloqueio de horario'];
+  const isInvalidPatientName = extractFnWithScope('isInvalidPatientName', { normName, NON_PATIENT_NAMES });
+  const hasReservedName = extractFnWithScope('hasReservedName', { isInvalidPatientName });
+  const isBlockLabelName = extractFnWithScope('isBlockLabelName', { normName, BLOCK_LABELS });
+  const isNonPatientRecord = extractFnWithScope('isNonPatientRecord', { isInvalidPatientName, isBlockLabelName, hasReservedName });
+  const isBlockSchedule = extractFn('isBlockSchedule');
+
+  test('paciente sem Nome Fantasia continua válido (não some da lista)', () => {
+    assert.equal(isNonPatientRecord({ nome: 'Irani Souza', nomeFantasia: '' }), false);
+    assert.equal(isNonPatientRecord({ nome: 'Irani Souza' }), false);
+    assert.equal(isNonPatientRecord({ nome: '', nomeFantasia: 'Dona Diva' }), false);
+  });
+
+  test('exercícios e rótulos de férias/ausência não são pacientes', () => {
+    assert.equal(isNonPatientRecord({ nome: 'Flexão', nomeFantasia: '' }), true);
+    assert.equal(isNonPatientRecord({ nome: '🏖️ Férias', nomeFantasia: '' }), true);
+    assert.equal(isNonPatientRecord({ nome: '🏥 Atestado / Saúde', nomeFantasia: '' }), true);
+    assert.equal(isNonPatientRecord({ nome: 'Maria', nomeFantasia: 'Prancha' }), true);
+    assert.equal(isNonPatientRecord({ nome: '', nomeFantasia: '' }), true);
+  });
+
+  test('isBlockSchedule identifica bloqueios e ignora atendimentos normais', () => {
+    assert.equal(isBlockSchedule({ pacienteId: '__BLOQUEIO__' }), true);
+    assert.equal(isBlockSchedule({ status: 'Ausência' }), true);
+    assert.equal(isBlockSchedule({ status: 'Férias' }), true);
+    assert.equal(isBlockSchedule({ tipo: 'Bloqueio' }), true);
+    assert.equal(isBlockSchedule({ pacienteId: 'p1', status: 'Agendado' }), false);
+    assert.equal(isBlockSchedule(null), false);
   });
 });
 
