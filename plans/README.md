@@ -13,14 +13,20 @@ Execute in the order below unless dependencies say otherwise. Each executor mode
 | [003](003-codegs-concurrency-locking.md) | Implement Concurrency Locking & Cascade Deletion in `Code.gs` | P1 | S | 001 | DONE |
 | [004](004-bulk-import-and-eliminate-n-plus-one.md) | Bulk Import Endpoint in `Code.gs` & Elimination of N+1 Loop | P1 | S | 001, 003 | DONE |
 | [005](005-protect-script-url-and-credentials.md) | Remove Hardcoded Script URL & Protect Setup Configuration | P2 | S | 001 | DONE |
+| [006](006-secure-idor-email-lookup-codegs.md) | Secure IDOR Email Lookup in `resolveSpreadsheet_` (`Code.gs`) | P1 | S | 001 | TODO |
+| [007](007-cleanup-dead-code-codegs.md) | Cleanup Dead Code and Duplicate Handlers in `Code.gs` | P1 | S | 001 | TODO |
+| [008](008-resilient-quick-checkin-mutation-handling.md) | Resilient Quick Check-in & Evolution Mutation Handling | P1 | S | 001, 002 | TODO |
+| [009](009-modularize-helpers-for-stable-unit-tests.md) | Modularize Shared Helpers for Clean Unit Testing | P2 | S | 001 | TODO |
+| [010](010-network-first-service-worker-app-shell.md) | Network-First App Shell & Update Listener in Service Worker | P2 | S | 001 | TODO |
 
 *Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (with one-line reason) | `REJECTED` (with one-line rationale)*
 
 ## Dependency notes
 
-- **002, 003, 004, 005 require 001**: Having an automated verification baseline (`node --test`) guarantees that edits to core parsing, response checking, and batch formatting can be verified mechanically without manual browser clicking.
-- **004 requires 003**: The `bulk_import` endpoint in `Code.gs` relies on the concurrency lock introduced in Plan 003 to ensure multi-row batch inserts cannot interleave with simultaneous operations.
-- **002 and 005 are independent**: They touch separate areas of `atendimentos.html` and can be executed independently once 001 is complete.
+- **006 and 007 (Code.gs)**: Can be executed sequentially or together. Both touch `Code.gs` without altering the frontend API contracts.
+- **008 (atendimentos.html)**: Builds on the strict error-handling semantics established in 002.
+- **009 (test & helpers)**: Refactors pure utilities into `js/helpers.js` to eliminate regex scraping from `test/helpers.test.js`.
+- **010 (sw.js & atendimentos.html)**: Hardens app shell delivery and adds update notification toasts.
 
 ## Findings considered and rejected
 
