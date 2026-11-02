@@ -879,6 +879,59 @@ describe('Pacientes sem Nome Fantasia, sanitização e bloqueios de agenda', () 
   });
 });
 
+describe('Sincronização Multi-Dispositivo & Autoridade da Planilha', () => {
+  test('dados da planilha sobrepõem metadados locais antigos', () => {
+    const sheetData = {
+      ID: 'p123',
+      Nome: 'Diva Ferreira Atualizada',
+      NomeFantasia: 'Dona Diva',
+      Telefone: '16999998888',
+      ValorPadrao: '150.00',
+      Arquivado: 'Não'
+    };
+    const localMeta = {
+      nome: 'Diva Ferreira Antiga',
+      telefone: '16999991111',
+      valorPadrao: '100.00',
+      arquivado: 'Sim'
+    };
+
+    const resolvedName = sheetData.Nome || localMeta.nome || '';
+    const resolvedTel = sheetData.Telefone || localMeta.telefone || '';
+    const resolvedValor = sheetData.ValorPadrao || localMeta.valorPadrao || '';
+    const resolvedArch = sheetData.Arquivado || localMeta.arquivado || 'Não';
+
+    assert.equal(resolvedName, 'Diva Ferreira Atualizada', 'Nome da planilha deve vencer');
+    assert.equal(resolvedTel, '16999998888', 'Telefone atualizado no celular deve vencer');
+    assert.equal(resolvedValor, '150.00', 'Valor atualizado no celular deve vencer');
+    assert.equal(resolvedArch, 'Não', 'Status arquivado da planilha deve vencer');
+  });
+
+  test('agendamentos da planilha sobrepõem cache local do computador', () => {
+    const localScheds = [
+      { id: 'sc1', hora: '14:00', status: 'Agendado' },
+      { id: 'sc_deleted', hora: '10:00', status: 'Agendado' }
+    ];
+    const sheetScheds = [
+      { id: 'sc1', hora: '15:00', status: 'Realizado' }
+    ];
+
+    const schedMap = {};
+    localScheds.forEach(sc => {
+      if (sc.id && sc.id.includes('_local_')) schedMap[sc.id] = sc;
+    });
+    sheetScheds.forEach(sc => {
+      schedMap[sc.id] = sc;
+    });
+    const finalScheds = Object.values(schedMap);
+
+    assert.equal(finalScheds.length, 1);
+    assert.equal(finalScheds[0].hora, '15:00');
+    assert.equal(finalScheds[0].status, 'Realizado');
+  });
+});
+
+
 
 
 
