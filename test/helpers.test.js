@@ -72,9 +72,9 @@ describe('escapeHtml', () => {
 
 describe('getPatientDisplayName and getPatientLegalName', () => {
   test('prefers nomeFantasia for internal display and nome for external documents', () => {
-    const p = { nome: 'Diva Ferreira dos Santos', nomeFantasia: 'Dona Diva' };
-    assert.equal(getPatientDisplayName(p), 'Dona Diva');
-    assert.equal(getPatientLegalName(p), 'Diva Ferreira dos Santos');
+    const p = { nome: 'Maria Ferreira dos Santos', nomeFantasia: 'Dona Maria' };
+    assert.equal(getPatientDisplayName(p), 'Dona Maria');
+    assert.equal(getPatientLegalName(p), 'Maria Ferreira dos Santos');
   });
 
   test('falls back to nome when nomeFantasia is empty', () => {
@@ -86,16 +86,16 @@ describe('getPatientDisplayName and getPatientLegalName', () => {
 
 describe('renderPatientAvatar', () => {
   test('renders image tag when patient has photo', () => {
-    const p = { nome: 'Diva Ferreira', nomeFantasia: 'Dona Diva', foto: 'data:image/jpeg;base64,abc123xyz' };
+    const p = { nome: 'Maria Ferreira', nomeFantasia: 'Dona Maria', foto: 'data:image/jpeg;base64,abc123xyz' };
     const res = renderPatientAvatar(p);
     assert.match(res, /<img src="data:image\/jpeg;base64,abc123xyz"/);
     assert.match(res, /class="avatar-img"/);
   });
 
   test('falls back to initials using nomeFantasia when patient has no photo', () => {
-    const p = { nome: 'Diva Ferreira dos Santos', nomeFantasia: 'Dona Diva', foto: '' };
+    const p = { nome: 'Maria Ferreira dos Santos', nomeFantasia: 'Dona Maria', foto: '' };
     const res = renderPatientAvatar(p);
-    assert.equal(res, '<div class="avatar">DD</div>');
+    assert.equal(res, '<div class="avatar">DM</div>');
   });
 
   test('handles null patient with fallback name', () => {
@@ -113,10 +113,10 @@ const isSchedulePendingForecast = extractFnWithScope('isSchedulePendingForecast'
 
 describe('scheduleMatchesPatient and isSchedulePendingForecast', () => {
   test('matches schedule by pacienteId, legal name, or nomeFantasia', () => {
-    const p = { id: 'p1', nome: 'Diva Ferreira dos Santos', nomeFantasia: 'Dona Diva' };
+    const p = { id: 'p1', nome: 'Maria Ferreira dos Santos', nomeFantasia: 'Dona Maria' };
     assert.equal(scheduleMatchesPatient({ pacienteId: 'p1', pacienteNome: 'Outro' }, p), true);
-    assert.equal(scheduleMatchesPatient({ pacienteId: '', pacienteNome: 'Diva Ferreira dos Santos' }, p), true);
-    assert.equal(scheduleMatchesPatient({ pacienteId: '', pacienteNome: 'dona diva' }, p), true);
+    assert.equal(scheduleMatchesPatient({ pacienteId: '', pacienteNome: 'Maria Ferreira dos Santos' }, p), true);
+    assert.equal(scheduleMatchesPatient({ pacienteId: '', pacienteNome: 'dona maria' }, p), true);
     assert.equal(scheduleMatchesPatient({ pacienteId: 'p2', pacienteNome: 'Outro Paciente' }, p), false);
   });
 
