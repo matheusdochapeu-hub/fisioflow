@@ -847,6 +847,33 @@
   }
   .btn-header-lgpd:hover { background: #f0f9ff; transform: translateY(-2px); }
 
+  .chip-fast {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 5px 11px;
+    font-size: 11.5px;
+    font-family: inherit;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-align: left;
+  }
+  .chip-fast:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary-deep);
+    transform: translateY(-1px);
+  }
+  .chip-fast:active {
+    transform: scale(0.96);
+  }
+
   .btn-dev-secret {
     display: none !important;
     background: #0f172a;
@@ -949,45 +976,54 @@
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div>
           <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Nome da Profissional</label>
-          <input id="providerNameInput" placeholder="Ex: Dra. Camila Santos">
-        </div>
-
-        <div>
-          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Registro CREFITO ou CPF</label>
-          <input id="providerDocInput" placeholder="Ex: CREFITO-3/123456-F">
+          <input id="providerNameInput" autocomplete="name" placeholder="Ex: Dra. Camila Santos">
         </div>
 
         <div>
           <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Seu E-mail do Google (Gmail)</label>
-          <input id="calendarIdInput" type="email" placeholder="Ex: seuemail@gmail.com">
+          <input id="calendarIdInput" type="email" autocomplete="email" placeholder="Ex: seuemail@gmail.com">
           <div style="font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.35;">
             Uma cópia da sua planilha no Google Drive será criada e compartilhada diretamente com este e-mail para seu acesso livre e backup.
           </div>
         </div>
 
-        <div>
-          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Telefone ou WhatsApp para contato</label>
-          <input id="providerContactInput" placeholder="Ex: (11) 99999-9999">
-        </div>
+        <!-- Opções complementares recolhidas para não cansar novos usuários -->
+        <details style="border:1px dashed var(--line-strong);border-radius:12px;padding:10px 14px;background:var(--bg);margin-top:2px;">
+          <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--primary);list-style:none;display:flex;align-items:center;justify-content:space-between;">
+            <span>➕ Personalizar CREFITO, WhatsApp, Endereço Base e Carro (Opcional)</span>
+            <span style="font-size:11px;opacity:0.75;">Toque para abrir ▾</span>
+          </summary>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;padding-top:8px;border-top:1px solid var(--line);">
+            <div>
+              <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Registro CREFITO ou CPF</label>
+              <input id="providerDocInput" placeholder="Ex: CREFITO-3/123456-F">
+            </div>
 
-        <div>
-          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Seu Endereço Base / Consultório (Ponto de Partida)</label>
-          <input id="providerAddressInput" placeholder="Ex: Av. Paulista, 1000 - Bela Vista, São Paulo - SP">
-          <div style="font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.35;">
-            Usado pelo Assistente de Rotas para calcular trajetos, tempos de deslocamento e gasto de combustível até a casa dos pacientes.
-          </div>
-        </div>
+            <div>
+              <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Telefone ou WhatsApp para contato</label>
+              <input id="providerContactInput" inputmode="tel" placeholder="Ex: (11) 99999-9999">
+            </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div>
-            <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Consumo Carro (Km/L)</label>
-            <input id="providerCarKmlInput" type="number" step="0.5" placeholder="12" value="12">
+            <div>
+              <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Seu Endereço Base / Consultório (Ponto de Partida)</label>
+              <input id="providerAddressInput" placeholder="Ex: Av. Paulista, 1000 - Bela Vista, São Paulo - SP">
+              <div style="font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.35;">
+                Usado pelo Assistente de Rotas para calcular trajetos, tempos e combustível até a casa dos pacientes.
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Consumo Carro (Km/L)</label>
+                <input id="providerCarKmlInput" type="number" step="0.5" placeholder="12" value="12">
+              </div>
+              <div>
+                <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Gasolina (R$/L)</label>
+                <input id="providerGasPriceInput" type="number" step="0.05" placeholder="5.80" value="5.80">
+              </div>
+            </div>
           </div>
-          <div>
-            <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Gasolina (R$/L)</label>
-            <input id="providerGasPriceInput" type="number" step="0.05" placeholder="5.80" value="5.80">
-          </div>
-        </div>
+        </details>
 
         <!-- Alerta de Privacidade & Garantia LGPD -->
         <div style="border:1.5px solid #0284c7;background:#f0f9ff;border-radius:12px;padding:12px 14px;margin-top:4px;">
@@ -1013,12 +1049,12 @@
         <div id="setupError" class="error-banner hidden" style="margin-top:4px;"></div>
 
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:8px;">
-          <button type="button" class="btn primary" id="btnSalvarSetup" onclick="conectarPrimeiroAcessoAutomatico()" style="width:100%;padding:12px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
-            <span>🚀 Conectar e Criar Minha Planilha</span>
+          <button type="button" class="btn primary" id="btnSalvarSetup" onclick="conectarPrimeiroAcessoAutomatico()" style="width:100%;padding:13px;font-size:14.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <span>🚀 Começar Agora (Criar Minha Planilha Grátis)</span>
           </button>
 
-          <button type="button" class="btn ghost" onclick="ativarModoDemonstracao()" style="width:100%;border:1px dashed var(--line-strong);font-size:12px;color:var(--ink-soft);padding:8px;">
-            ✨ Testar Agora (Modo Demonstração sem Planilha)
+          <button type="button" class="btn ghost" onclick="ativarModoDemonstracao()" style="width:100%;border:1px dashed var(--line-strong);font-size:12.5px;color:var(--ink-soft);padding:9px;font-weight:600;">
+            ✨ Experimentar com Pacientes de Exemplo (1 Clique, Sem Cadastro)
           </button>
 
           <button id="setupCancelBtn" class="btn ghost hidden" onclick="cancelSetup()">Cancelar</button>
@@ -2045,6 +2081,127 @@ function ativarModoDemonstracao(){
   showToast('✨ Modo Demonstração ativado! Dados salvos localmente.', 'ok');
 }
 
+function carregarPacientesExemploRapido(){
+  localStorage.removeItem('ft_demo_seeded');
+  seedDemoDataIfEmpty();
+  var demoPts = JSON.parse(localStorage.getItem('ft_demo_patients') || '[]');
+  var demoEnts = JSON.parse(localStorage.getItem('ft_demo_entries') || '[]');
+  var demoEvos = JSON.parse(localStorage.getItem('ft_demo_evos') || '[]');
+  var demoSchs = JSON.parse(localStorage.getItem('ft_demo_scheds') || '[]');
+
+  patients = demoPts;
+  entries = demoEnts;
+  evolutions = demoEvos;
+  schedules = demoSchs;
+
+  try {
+    localStorage.setItem('ft_demo_patients', JSON.stringify(patients));
+    localStorage.setItem('ft_demo_entries', JSON.stringify(entries));
+    localStorage.setItem('ft_demo_evos', JSON.stringify(evolutions));
+    localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules));
+    localStorage.setItem('ft_has_sample_data', '1');
+  } catch(e){}
+
+  reconcileSchedulesWithEntries();
+  populatePatientFilter();
+  populateEvolutionsFilters();
+  populateAgendaFilters();
+  renderPatientsTab();
+  renderAgendaTab();
+  renderEvolutionsTab();
+  renderList();
+  if(typeof renderFinanceiroTab === 'function') renderFinanceiroTab();
+  showToast('🌱 2 Pacientes de exemplo carregados! Explore os prontuários, rotas e recibos.', 'ok');
+}
+
+function limparPacientesExemplo(){
+  if(!confirm('Deseja remover os pacientes de exemplo e começar com seus pacientes reais do zero?')) return;
+  patients = patients.filter(function(p){ return !p.id || p.id.indexOf('demo') === -1; });
+  entries = entries.filter(function(e){ return !e.id || e.id.indexOf('demo') === -1; });
+  evolutions = evolutions.filter(function(ev){ return !ev.id || ev.id.indexOf('demo') === -1; });
+  schedules = schedules.filter(function(s){ return !s.id || s.id.indexOf('demo') === -1; });
+
+  try {
+    localStorage.removeItem('ft_has_sample_data');
+    localStorage.setItem('ft_demo_patients', JSON.stringify(patients));
+    localStorage.setItem('ft_demo_entries', JSON.stringify(entries));
+    localStorage.setItem('ft_demo_evos', JSON.stringify(evolutions));
+    localStorage.setItem('ft_demo_scheds', JSON.stringify(schedules));
+  } catch(e){}
+
+  reconcileSchedulesWithEntries();
+  populatePatientFilter();
+  populateEvolutionsFilters();
+  populateAgendaFilters();
+  renderPatientsTab();
+  renderAgendaTab();
+  renderEvolutionsTab();
+  renderList();
+  if(typeof renderFinanceiroTab === 'function') renderFinanceiroTab();
+  showToast('Pacientes de exemplo removidos! Pronto para cadastrar seus pacientes.', 'ok');
+}
+
+function appendQuickText(targetId, text){
+  var el = document.getElementById(targetId);
+  if(!el) return;
+  var current = el.value.trim();
+  if(!current){
+    el.value = text;
+  } else {
+    if(/[.!?]$/.test(current)){
+      el.value = current + ' ' + text;
+    } else {
+      el.value = current + '. ' + text;
+    }
+  }
+  el.focus();
+}
+
+function applyClinicalTemplate(type){
+  var templates = {
+    lombalgia: {
+      clinico: 'Lombalgia Crônica Mecânico-Postural (CID-10 M54.5)',
+      funcional: 'Quadro álgico lombar com irradiação ocasional, rigidez matinal, encurtamento de cadeia muscular posterior e dor à palpação paravertebral e flexão do tronco.',
+      objetivos: 'Alívio do quadro álgico, ganho de flexibilidade de cadeia posterior, fortalecimento de core e estabilizadores lombares, reeducação postural e prevenção de recidivas.'
+    },
+    gonartrose: {
+      clinico: 'Gonartrose Primária Bilateral / Osteoartrite de Joelho (CID-10 M17.0)',
+      funcional: 'Crepitação articular, dor à descarga de peso e subida de escadas, redução da amplitude de movimento de flexão do joelho e hipotrofia de quadríceps.',
+      objetivos: 'Redução do estresse articular, ganho de ADM de joelho, fortalecimento de quadríceps, isquiotibiais e glúteo médio, e melhora do padrão de marcha funcional.'
+    },
+    avc: {
+      clinico: 'Sequelas de Acidente Vascular Cerebral Isquêmico / Hemiparesia (CID-10 I69.3)',
+      funcional: 'Padrão hemiplégico/hemiparético espástico braquiocrural, assimetria de marcha com circumdução, redução de tônus e controle motor seletivo em membro acometido.',
+      objetivos: 'Modulação de tônus muscular, estímulo a transferências posturais autônomas, treino proprioceptivo, reaprendizado motor e treino de marcha funcional com segurança.'
+    },
+    quedas: {
+      clinico: 'Instabilidade Postural, Risco de Quedas e Senescência (CID-10 R26.8)',
+      funcional: 'Déficit de equilíbrio estático e dinâmico, marcha com passos curtos e base alargada, redução da velocidade e força de propulsão dos membros inferiores.',
+      objetivos: 'Treino de equilíbrio estático e dinâmico, fortalecimento muscular global com foco em membros inferiores, treino de reações de proteção e prevenção de quedas domiciliares.'
+    },
+    manguito: {
+      clinico: 'Síndrome do Impacto / Tendinopatia do Manguito Rotador (CID-10 M75.1)',
+      funcional: 'Dor na abdução e rotação externa do ombro, teste de Neer/Hawkins positivo, arco doloroso entre 60° e 120° e fraqueza de estabilizadores escapulares.',
+      objetivos: 'Analgesia local, recuperação da amplitude de movimento livre de dor, fortalecimento do manguito rotador e estabilização escapulotorácica.'
+    },
+    artroplastia: {
+      clinico: 'Pós-operatório de Artroplastia Total de Quadril (CID-10 Z96.6)',
+      funcional: 'Fase de reabilitação pós-cirúrgica, limitação antálgica de amplitude, fraqueza de abdutores do quadril e marcha em Trendelenburg compensada.',
+      objetivos: 'Controle de edema e dor, ganho de mobilidade respeitando precauções protéticas, fortalecimento de abdutores e extensores, e reeducação da marcha sem claudicação.'
+    }
+  };
+
+  var tpl = templates[type];
+  if(!tpl) return;
+  var elClinico = document.getElementById('pFormDiagClinico');
+  var elFuncional = document.getElementById('pFormDiagFuncional');
+  var elObjetivos = document.getElementById('pFormObjetivos');
+  if(elClinico) elClinico.value = tpl.clinico;
+  if(elFuncional) elFuncional.value = tpl.funcional;
+  if(elObjetivos) elObjetivos.value = tpl.objetivos;
+  showToast('Modelo clínico aplicado com sucesso!', 'ok');
+}
+
 async function conectarPrimeiroAcessoAutomatico(){
   var name = (document.getElementById('providerNameInput').value || '').trim();
   var doc = (document.getElementById('providerDocInput').value || '').trim();
@@ -2633,12 +2790,37 @@ function renderPatientsTab(){
   }
 
   if(activeList.length === 0 && archivedList.length === 0){
-    container.innerHTML = '<div class="empty">' +
-      '<span class="leaf">&#128100;</span>' +
-      (query ? 'Nenhum paciente encontrado para a busca.' : 'Nenhum paciente cadastrado ainda.') +
-      '</div>';
+    if(query){
+      container.innerHTML = '<div class="empty">' +
+        '<span class="leaf">&#128100;</span>' +
+        'Nenhum paciente encontrado para a busca.' +
+        '</div>';
+      return;
+    }
+    container.innerHTML = '<div class="card" style="border:1.5px solid var(--accent);background:linear-gradient(135deg, var(--surface), var(--primary-soft));padding:22px 18px;text-align:center;border-radius:var(--radius);margin-bottom:16px;box-shadow:var(--shadow-soft);">' +
+      '<div style="font-size:38px;margin-bottom:8px;">🌿</div>' +
+      '<h3 style="color:var(--primary-deep);font-size:19px;margin-bottom:6px;">Boas-vindas ao FisioFlow!</h3>' +
+      '<p style="font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;max-width:390px;margin-left:auto;margin-right:auto;">' +
+        'Tudo pronto para organizar sua rotina! Para ver prontuários, agendamentos, rotas e recibos funcionando na prática, você pode carregar 2 pacientes de exemplo com 1 toque:' +
+      '</p>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto;">' +
+        '<button type="button" class="btn primary" onclick="carregarPacientesExemploRapido()" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;font-weight:700;font-size:13.5px;">' +
+          '<span>🌱 Carregar 2 Pacientes de Exemplo</span>' +
+        '</button>' +
+        '<button type="button" class="btn ghost" onclick="openPatientForm()" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;font-size:13px;font-weight:600;">' +
+          '<span>➕ Ou Cadastrar Meu 1º Paciente</span>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
     return;
   }
+
+  var demoNoticeHtml = patients.some(function(p){ return p.id && p.id.indexOf('demo') > -1; })
+    ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:#92400e;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">' +
+        '<div>✨ <b>Pacientes de Exemplo Carregados</b> (Dona Diva e Seu João).</div>' +
+        '<button type="button" class="btn ghost small" onclick="limparPacientesExemplo()" style="padding:3px 8px;font-size:11px;background:#ffffff;border-color:#fde68a;color:#b45309;font-weight:700;">🗑️ Limpar Exemplos</button>' +
+      '</div>'
+    : '';
 
   var activeHtml = activeList.length > 0
     ? activeList.map(renderSinglePatientCardHtml).join('')
@@ -2656,7 +2838,7 @@ function renderPatientsTab(){
       : '') +
   '</div>';
 
-  container.innerHTML = activeHtml + archivedSectionHtml;
+  container.innerHTML = demoNoticeHtml + activeHtml + archivedSectionHtml;
 }
 
 function togglePatientCascade(id){
@@ -2850,6 +3032,17 @@ function openPatientForm(patientId){
       '</div>' +
 
       '<div class="form-section-title">Prontuário Fisioterapêutico (CREFITO-3)</div>' +
+      '<div style="margin-bottom:8px;">' +
+        '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">Modelos prontos (1 toque para preencher diagnóstico e condutas):</div>' +
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;">' +
+          '<button type="button" class="chip-fast" onclick="applyClinicalTemplate(\'lombalgia\')">🦴 Lombalgia (M54.5)</button>' +
+          '<button type="button" class="chip-fast" onclick="applyClinicalTemplate(\'gonartrose\')">🦵 Artrose Joelho (M17)</button>' +
+          '<button type="button" class="chip-fast" onclick="applyClinicalTemplate(\'avc\')">🧠 Pós-AVC (I69.3)</button>' +
+          '<button type="button" class="chip-fast" onclick="applyClinicalTemplate(\'quedas\')">👴 Idoso / Quedas (R26.8)</button>' +
+          '<button type="button" class="chip-fast" onclick="applyClinicalTemplate(\'manguito\')">💪 Manguito Rotador (M75.1)</button>' +
+          '<button type="button" class="chip-fast" onclick="applyClinicalTemplate(\'artroplastia\')">🦿 Prótese Quadril (Z96.6)</button>' +
+        '</div>' +
+      '</div>' +
       '<label>Diagnóstico clínico / CID</label>' +
       '<input id="pFormDiagClinico" value="'+escapeHtml(p?p.diagClinico:'')+'" placeholder="Ex: AVC Isquêmico, Parkinson, CID G20">' +
 
@@ -3887,10 +4080,33 @@ function openNewEvolution(preSelectPatientId){
         '</div>' +
       '</div>' +
 
-      '<label style="margin-top:8px;display:block;">Estado clínico geral</label>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:4px;">' +
+        '<label style="margin:0;font-size:12px;font-weight:600;color:var(--ink);">Estado clínico geral</label>' +
+        '<span style="font-size:11px;color:var(--ink-soft);">Atalhos de 1 toque:</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;">' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoEstado\', \'Sem queixas álgicas, estado geral estável e comunicativo.\')">🟢 Sem dor / Estável</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoEstado\', \'Relata dor leve na região afetada (EVA 2-3/10).\')">🟡 Dor leve (EVA 2-3)</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoEstado\', \'Queixa de dor moderada aos movimentos (EVA 5-6/10).\')">🟠 Dor moderada (EVA 5-6)</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoEstado\', \'Boa disposição física, motivado(a) e colaborativo(a).\')">💪 Boa disposição</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoEstado\', \'Relata melhora progressiva na mobilidade e marcha diária.\')">🚶 Melhora na marcha</button>' +
+      '</div>' +
       '<textarea id="newEvoEstado" placeholder="Queixas do paciente, nível de dor (EVA), disposição, sintomas relatados..."></textarea>' +
 
-      '<label style="margin-top:8px;display:block;">Condutas fisioterapêuticas realizadas</label>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:4px;">' +
+        '<label style="margin:0;font-size:12px;font-weight:600;color:var(--ink);">Condutas fisioterapêuticas realizadas</label>' +
+        '<span style="font-size:11px;color:var(--ink-soft);">Atalhos de 1 toque:</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;">' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Cinesioterapia motora ativa/assistida.\')">+ Cinesioterapia</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Alongamentos globais de cadeia anterior e posterior.\')">+ Alongamentos</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Treino de marcha com transferência de peso e equilíbrio.\')">+ Treino de Marcha</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Fortalecimento muscular de membros inferiores (MMII).\')">+ Fortalecimento MMII</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Eletroterapia analgésica (TENS convencional, 100Hz, 30 min).\')">+ Eletroterapia TENS</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Mobilização articular passiva e descompressão.\')">+ Mobilização articular</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Exercícios respiratórios diafragmáticos e padrão ventilatório.\')">+ Respiração</button>' +
+        '<button type="button" class="chip-fast" onclick="appendQuickText(\'newEvoCondutas\', \'Crioterapia local por 20 minutos pós-exercícios.\')">+ Crioterapia</button>' +
+      '</div>' +
       '<textarea id="newEvoCondutas" placeholder="Cinesioterapia, exercícios executados, mobilizações articulares, treino de marcha, eletroterapia..."></textarea>' +
 
       '<div class="btn-row">' +
@@ -8666,9 +8882,38 @@ async function importBackup(ev){
 /* ============================================================
    PWA & INICIALIZAÇÃO
    ============================================================ */
+function showUpdateToast(){
+  var existing = document.getElementById('pwaUpdateToast');
+  if(existing) return;
+  var div = document.createElement('div');
+  div.id = 'pwaUpdateToast';
+  div.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#ffffff;padding:12px 18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.28);z-index:999999;font-size:13px;display:flex;align-items:center;gap:12px;max-width:92%;border:1px solid #334155;';
+  div.innerHTML = '<span>🚀 <b>Nova versão do FisioFlow disponível!</b></span>' +
+    '<button type="button" onclick="location.reload(true)" style="background:#B5542E;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer;">Atualizar agora</button>';
+  document.body.appendChild(div);
+}
+
 if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      reg.addEventListener('updatefound', function(){
+        var newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', function(){
+          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+            showUpdateToast();
+          }
+        });
+      });
+    }).catch(function(){});
+
+    var refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(!refreshing){
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   });
 }
 

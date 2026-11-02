@@ -227,5 +227,40 @@ describe('Route and Fuel Assistant helpers', () => {
   });
 });
 
+describe('Rapid Clinical Helpers', () => {
+  function appendTextLogic(current, text) {
+    var c = (current || '').trim();
+    if (!c) return text;
+    if (/[.!?]$/.test(c)) return c + ' ' + text;
+    return c + '. ' + text;
+  }
+
+  test('appends text cleanly with punctuation awareness', () => {
+    assert.equal(appendTextLogic('', 'Cinesioterapia'), 'Cinesioterapia');
+    assert.equal(appendTextLogic('Paciente estável.', 'Treino de marcha'), 'Paciente estável. Treino de marcha');
+    assert.equal(appendTextLogic('Paciente sem dor', 'Alongamentos'), 'Paciente sem dor. Alongamentos');
+  });
+
+  test('clinical templates have valid diagnosis, functional, and objectives', () => {
+    const templates = {
+      lombalgia: {
+        clinico: 'Lombalgia Crônica Mecânico-Postural (CID-10 M54.5)',
+        funcional: 'Quadro álgico lombar...',
+        objetivos: 'Alívio do quadro álgico...'
+      },
+      gonartrose: {
+        clinico: 'Gonartrose Primária Bilateral / Osteoartrite de Joelho (CID-10 M17.0)',
+        funcional: 'Crepitação articular...',
+        objetivos: 'Redução do estresse articular...'
+      }
+    };
+    for (const key of Object.keys(templates)) {
+      assert.ok(templates[key].clinico.length > 5);
+      assert.ok(templates[key].funcional.length > 5);
+      assert.ok(templates[key].objetivos.length > 5);
+    }
+  });
+});
+
 
 

@@ -1,6 +1,6 @@
 /* Service worker do app Atendimentos (Fisioterapia).
    Incrementar CACHE_VERSION ao publicar mudanças de assets para invalidar o cache. */
-var CACHE_VERSION = 'fisioflow-v6';
+var CACHE_VERSION = 'fisioflow-v7';
 var CORE_CACHE = CACHE_VERSION + '-core';
 var RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -52,12 +52,26 @@ self.addEventListener('fetch', function(event){
     return;  // deixa o navegador tratar
   }
 
-  /* Navegações: network-first com fallback ao app shell em cache (offline). */
-  if(req.mode === 'navigate'){
+  var isHtml = req.mode === 'navigate' ||
+               url.pathname.endsWith('.html') ||
+               url.pathname.endsWith('/') ||
+               url.href === self.registration.scope;
+
+  /* Páginas HTML e App Shell: sempre NETWORK-FIRST para atualizações instantâneas.
+     Em caso de falha de conexão (offline), recorre ao cache local. */
+  if(isHtml){
     event.respondWith(
-      fetch(req).catch(function(){
-        return caches.match('./atendimentos.html').then(function(r){
-          return r || caches.match('./index.html');
+      fetch(req).then(function(res){
+        if(res && res.ok){
+          var copy = res.clone();
+          caches.open(CORE_CACHE).then(function(c){ c.put(req, copy); });
+        }
+        return res;
+      }).catch(function(){
+        return caches.match(req).then(function(r){
+          return r || caches.match('./atendimentos.html').then(function(fallback){
+            return fallback || caches.match('./index.html');
+          });
         });
       })
     );
@@ -72,7 +86,7 @@ self.addEventListener('fetch', function(event){
     return;
   }
 
-  /* Mesmo domínio (app shell / ícones): cache-first. */
+  /* Mesmo domínio (ícones, manifest, qr): cache-first. */
   if(url.origin === self.location.origin){
     event.respondWith(
       caches.match(req).then(function(cached){

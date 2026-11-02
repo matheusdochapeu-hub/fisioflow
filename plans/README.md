@@ -17,7 +17,7 @@ Execute in the order below unless dependencies say otherwise. Each executor mode
 | [007](007-cleanup-dead-code-codegs.md) | Cleanup Dead Code and Duplicate Handlers in `Code.gs` | P1 | S | 001 | TODO |
 | [008](008-resilient-quick-checkin-mutation-handling.md) | Resilient Quick Check-in & Evolution Mutation Handling | P1 | S | 001, 002 | TODO |
 | [009](009-modularize-helpers-for-stable-unit-tests.md) | Modularize Shared Helpers for Clean Unit Testing | P2 | S | 001 | TODO |
-| [010](010-network-first-service-worker-app-shell.md) | Network-First App Shell & Update Listener in Service Worker | P2 | S | 001 | TODO |
+| [010](010-network-first-service-worker-app-shell.md) | Network-First App Shell & Update Listener in Service Worker | P2 | S | 001 | DONE |
 
 *Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (with one-line reason) | `REJECTED` (with one-line rationale)*
 
