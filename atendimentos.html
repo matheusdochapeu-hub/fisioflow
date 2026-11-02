@@ -8862,40 +8862,55 @@ async function submitVacationBlock(){
         valor: 0,
         observacao: vacReason,
         calendarId: calId,
-        tipo: 'Bloqueio'
+        tipo: 'Bloqueio',
+        criadoEm: new Date().toISOString()
       };
     });
 
-    var resp = null;
-    if(itemsToCreate.length === 1){
-      resp = await postAction({
-        action: 'create_schedule',
-        item: itemsToCreate[0]
-      });
-      if(resp && resp.eventId) itemsToCreate[0].calendarEventId = resp.eventId;
-    } else {
-      resp = await postAction({
-        action: 'create_schedules_batch',
-        items: itemsToCreate
-      });
-      if(resp && resp.eventIds){
-        itemsToCreate.forEach(function(it){
-          if(resp.eventIds[it.id]) it.calendarEventId = resp.eventIds[it.id];
-        });
-      }
-    }
-
-    // Atualiza estado local
+    // Atualiza estado local imediatamente (Local-first / Optimistic UI)
     itemsToCreate.forEach(function(it){
       schedules.push(it);
     });
     saveLocalSchedules();
 
+    // Fecha modal e atualiza a interface instantaneamente
     closeModal();
-    if(currentTab === 'agenda') renderAgendaTab();
-    if(currentTab === 'relatorios') renderReportBody();
+    renderAgendaTab();
+    if(typeof currentTab !== 'undefined' && currentTab === 'relatorios') renderReportBody();
 
     showToast('🏖️ ' + (rangeDates.length === 1 ? '1 dia de ausência registrado' : rangeDates.length + ' dias de ausência registrados') + ' com sucesso!', 'ok');
+
+    // Sincroniza em segundo plano na planilha e no Google Agenda
+    (async function syncVacationInBackground(){
+      try{
+        var resp = null;
+        if(itemsToCreate.length === 1){
+          resp = await postAction({
+            action: 'create_schedule',
+            item: itemsToCreate[0]
+          });
+          if(resp && resp.eventId){
+            itemsToCreate[0].calendarEventId = resp.eventId;
+            saveLocalSchedules();
+            renderAgendaTab();
+          }
+        } else {
+          resp = await postAction({
+            action: 'create_schedules_batch',
+            items: itemsToCreate
+          });
+          if(resp && resp.eventIds){
+            itemsToCreate.forEach(function(it){
+              if(resp.eventIds[it.id]) it.calendarEventId = resp.eventIds[it.id];
+            });
+            saveLocalSchedules();
+            renderAgendaTab();
+          }
+        }
+      } catch(bgErr){
+        console.warn('Aviso: Ausência salva localmente. Sincronização remota pendente:', bgErr);
+      }
+    })();
   } catch(err){
     console.error('Erro ao salvar ausência:', err);
     alert('Erro ao registrar ausência: ' + (err.message || err));
