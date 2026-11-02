@@ -473,6 +473,68 @@ describe('Google Calendar Integration Helpers', () => {
     assert.match(feed, /SUMMARY:Fisioterapia: Dona Maria/);
     assert.match(feed, /END:VCALENDAR/);
   });
+
+  test('buildGCalApiPayload formats direct Google Calendar API v3 event properly', () => {
+    const getSchedulePatientDisplayName = (sc) => sc.pacienteNome || 'Paciente';
+    const getSchedulePatientObj = () => ({ telefone: '16999999999' });
+    const getPatientFullAddress = () => 'Rua das Flores, 100 - Ribeirão Preto';
+
+    const buildGCalApiPayloadFn = extractFnWithScope('buildGCalApiPayload', {
+      getSchedulePatientDisplayName,
+      getSchedulePatientObj,
+      getPatientFullAddress
+    });
+
+    const sc = {
+      id: 'sc_api_1',
+      pacienteNome: 'João da Silva',
+      data: '2026-11-10',
+      hora: '14:00',
+      duracaoMin: 50,
+      status: 'Agendado'
+    };
+
+    const payload = buildGCalApiPayloadFn(sc);
+    assert.equal(payload.summary, 'Fisioterapia: João da Silva');
+    assert.equal(payload.location, 'Rua das Flores, 100 - Ribeirão Preto');
+    assert.match(payload.start.dateTime, /2026-11-10T14:00:00/);
+    assert.match(payload.end.dateTime, /2026-11-10T14:50:00/);
+    assert.equal(payload.start.timeZone, 'America/Sao_Paulo');
+  });
+
+  test('obterGoogleCalendarTokenSalvo and expiration lifecycle', () => {
+    let mockStorage = {};
+    const scope = {
+      GCAL_TOKEN_STORAGE_KEY: 'ff_google_cal_oauth_token',
+      GCAL_TOKEN_EXP_KEY: 'ff_google_cal_oauth_exp',
+      sessionStorage: {
+        getItem: (k) => mockStorage[k] || null,
+        setItem: (k, v) => { mockStorage[k] = String(v); },
+        removeItem: (k) => { delete mockStorage[k]; }
+      },
+      localStorage: {
+        getItem: (k) => mockStorage[k] || null,
+        setItem: (k, v) => { mockStorage[k] = String(v); },
+        removeItem: (k) => { delete mockStorage[k]; }
+      },
+      _googleAccessToken: null
+    };
+
+    const obterFn = extractFnWithScope('obterGoogleCalendarTokenSalvo', scope);
+    const salvarFn = extractFnWithScope('salvarGoogleCalendarToken', scope);
+    const limparFn = extractFnWithScope('limparGoogleCalendarToken', scope);
+
+    // Initial state: no token
+    assert.equal(obterFn(), null);
+
+    // Save token with 3600s
+    salvarFn('ya29.test_token_123', 3600);
+    assert.equal(obterFn(), 'ya29.test_token_123');
+
+    // Clear token
+    limparFn();
+    assert.equal(obterFn(), null);
+  });
 });
 
 describe('Route Engine, Haversine Estimation and Coordinates Matching', () => {
