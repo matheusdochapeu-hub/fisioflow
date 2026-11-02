@@ -146,6 +146,19 @@ const formatDurationHuman = extractFnWithScope('formatDurationHuman', { formatDu
 const calcFuelCost = extractFnWithScope('calcFuelCost', { calcFuelMetrics });
 const buildGoogleMapsDirectionsUrl = extractFnWithScope('buildGoogleMapsDirectionsUrl', { buildGoogleMapsDirUrl });
 
+let currentTestHomeAddress = '';
+const getHomeAddressDisplayName = extractFnWithScope('getHomeAddressDisplayName', {
+  getHomeAddress: () => currentTestHomeAddress
+});
+const getUserCityFallback = extractFnWithScope('getUserCityFallback', {
+  getHomeAddress: () => currentTestHomeAddress,
+  DEFAULT_CITY_FALLBACK: ''
+});
+const getPatientFullAddress = extractFnWithScope('getPatientFullAddress', {
+  getUserCityFallback,
+  DEFAULT_CITY_FALLBACK: ''
+});
+
 describe('Route and Fuel Assistant helpers', () => {
   test('timeStrToMin converts HH:MM to total minutes correctly', () => {
     assert.equal(timeStrToMin('00:00'), 0);
@@ -224,6 +237,64 @@ describe('Route and Fuel Assistant helpers', () => {
     const f = calcFuelCost(28);
     assert.equal(f.liters, 2.0);
     assert.equal(f.cost, 12.20);
+  });
+
+  test('calcFuelMetrics handles null, undefined and NaN safely', () => {
+    const fnNull = calcFuelMetrics(null);
+    assert.equal(fnNull.km, 0);
+    assert.equal(fnNull.liters, 0);
+    assert.equal(fnNull.cost, 0);
+
+    const fnUndef = calcFuelMetrics(undefined);
+    assert.equal(fnUndef.km, 0);
+
+    const fnNaN = calcFuelMetrics('invalid_number');
+    assert.equal(fnNaN.km, 0);
+  });
+
+  test('getHomeAddressDisplayName filters out street numbers, CEPs and state codes and prefers neighborhood', () => {
+    currentTestHomeAddress = '';
+    assert.equal(getHomeAddressDisplayName(), 'Base');
+
+    currentTestHomeAddress = 'Rua General Osório, 100 - Centro, Ribeirão Preto - SP';
+    assert.equal(getHomeAddressDisplayName(), 'Centro');
+
+    currentTestHomeAddress = 'Av. Independência, 1200, Jardim Sumaré, Ribeirão Preto - SP';
+    assert.equal(getHomeAddressDisplayName(), 'Jardim Sumaré');
+
+    currentTestHomeAddress = 'Rua Floriano Peixoto, 45';
+    assert.equal(getHomeAddressDisplayName(), 'Rua Floriano Peixoto');
+
+    currentTestHomeAddress = 'Clínica Central, Sala 102';
+    assert.equal(getHomeAddressDisplayName(), 'Clínica Central');
+  });
+
+  test('getUserCityFallback extracts city and state from home address', () => {
+    currentTestHomeAddress = 'Rua General Osório, 100 - Centro, Ribeirão Preto - SP';
+    assert.equal(getUserCityFallback(), 'Ribeirão Preto - SP');
+
+    currentTestHomeAddress = '';
+    assert.equal(getUserCityFallback(), '');
+  });
+
+  test('getPatientFullAddress appends user city fallback and avoids duplication', () => {
+    currentTestHomeAddress = 'Rua General Osório, 100 - Centro, Ribeirão Preto - SP';
+
+    // Patient with only street and neighborhood receives user's base city fallback
+    const p1 = { endereco: 'Rua Álvares Cabral, 300', bairro: 'Centro', cidade: '' };
+    assert.equal(getPatientFullAddress(p1), 'Rua Álvares Cabral, 300, Centro, Ribeirão Preto - SP');
+
+    // Patient with explicit other city preserves their city
+    const p2 = { endereco: 'Rua Barão do Rio Branco, 50', bairro: 'Centro', cidade: 'Sertãozinho - SP' };
+    assert.equal(getPatientFullAddress(p2), 'Rua Barão do Rio Branco, 50, Centro, Sertãozinho - SP');
+
+    // Patient already having city in street avoids duplication
+    const p3 = { endereco: 'Rua São Paulo, 100, Ribeirão Preto - SP', bairro: '', cidade: '' };
+    assert.equal(getPatientFullAddress(p3), 'Rua São Paulo, 100, Ribeirão Preto - SP');
+
+    // Empty patient returns empty string
+    assert.equal(getPatientFullAddress(null), '');
+    assert.equal(getPatientFullAddress({ endereco: '', bairro: '', cidade: '' }), '');
   });
 });
 
@@ -431,6 +502,29 @@ describe('Route Engine, Haversine Estimation and Coordinates Matching', () => {
     assert.ok(rows[0].route.durationMin > 0);
     assert.ok(rows[0].fuel.liters > 0);
     assert.ok(rows[0].fuel.cost > 0);
+  });
+
+  test('Route calculations with blank base address safely return null or friendly fallback without exception', () => {
+    // When home address is empty
+    const blankHome = '';
+    const patAddr = 'Rua General Osório, 100, Centro, Ribeirão Preto - SP';
+    const rHome = (blankHome && patAddr) ? getRouteSyncOrApprox(blankHome, patAddr) : null;
+    assert.equal(rHome, null);
+
+    // Fuel cost calculation handles null distance safely
+    const fuelHome = rHome ? calcFuelCost(rHome.distanceKm) : null;
+    assert.equal(fuelHome, null);
+
+    // When home address is configured
+    const configuredHome = 'Rua Maracaju, 88, Vila Tibério, Ribeirão Preto - SP';
+    const rHomeValid = getRouteSyncOrApprox(configuredHome, patAddr);
+    assert.ok(rHomeValid && rHomeValid.ok);
+    assert.ok(rHomeValid.distanceKm > 0);
+    assert.ok(rHomeValid.durationMin > 0);
+
+    const fuelValid = calcFuelCost(rHomeValid.distanceKm);
+    assert.ok(fuelValid.liters > 0);
+    assert.ok(fuelValid.cost > 0);
   });
 });
 

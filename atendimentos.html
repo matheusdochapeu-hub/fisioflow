@@ -6450,9 +6450,39 @@ function getHomeAddress(){
 function getHomeAddressDisplayName(){
   var addr = getHomeAddress();
   if(!addr) return 'Base';
-  var parts = addr.split(/[-–,]/).map(function(s){ return s.trim(); }).filter(Boolean);
-  if(parts.length >= 2) return parts[1];
-  return parts[0] || 'Base';
+  var rawParts = addr.split(/[-–,]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if(rawParts.length === 0) return 'Base';
+
+  var meaningful = rawParts.filter(function(p){
+    if(/^\d+[a-zA-Z]?$/.test(p)) return false; // números isolados ex: "100", "45A"
+    if(/^n[ºo]?\s*\d+/i.test(p)) return false; // "nº 100"
+    if(/^(ap|apto|bloco|cj|sala)\s*\d*/i.test(p)) return false;
+    if(/^\d{5}-?\d{3}$/.test(p)) return false; // CEP
+    if(/^[A-Z]{2}$/i.test(p)) return false; // UF ex: "SP"
+    if(p.toLowerCase() === 'brasil' || p.toLowerCase() === 'brazil') return false;
+    return true;
+  });
+
+  if(meaningful.length >= 2){
+    return meaningful[1];
+  }
+  return meaningful[0] || rawParts[0] || 'Base';
+}
+
+function getUserCityFallback(){
+  var home = getHomeAddress();
+  if(!home) return DEFAULT_CITY_FALLBACK || '';
+  var parts = home.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  if(parts.length >= 2){
+    var last = parts[parts.length - 1];
+    if(!/^\d{5}-?\d{3}$/.test(last) && last.length > 2){
+      return last;
+    }
+    if(parts.length >= 3){
+      return parts[parts.length - 2] + (last ? ' - ' + last : '');
+    }
+  }
+  return DEFAULT_CITY_FALLBACK || '';
 }
 
 function getCarKmPerLiter(){
@@ -6477,8 +6507,12 @@ function getPatientFullAddress(p){
   if(!p) return '';
   var end = String(p.endereco || '').trim();
   var bai = String(p.bairro || '').trim();
-  var cid = String(p.cidade || '').trim() || DEFAULT_CITY_FALLBACK;
+  var cityFallback = getUserCityFallback();
+  var cid = String(p.cidade || '').trim() || cityFallback || DEFAULT_CITY_FALLBACK;
   if(!end && !bai) return '';
+  if(cid && (end.toLowerCase().indexOf(cid.toLowerCase()) > -1 || bai.toLowerCase().indexOf(cid.toLowerCase()) > -1)){
+    return [end, bai].filter(Boolean).join(', ');
+  }
   return [end, bai, cid].filter(Boolean).join(', ');
 }
 
@@ -6868,7 +6902,9 @@ function formatDurationFriendly(mins){
 function calcFuelMetrics(distanceKm){
   var km = Math.max(0, Number(distanceKm) || 0);
   var kml = getCarKmPerLiter();
+  if(!kml || kml <= 0 || !isFinite(kml)) kml = 14;
   var gasPrice = getGasPrice();
+  if(!gasPrice || gasPrice <= 0 || !isFinite(gasPrice)) gasPrice = 6.10;
   var liters = km / kml;
   var cost = liters * gasPrice;
   return {
@@ -7784,9 +7820,12 @@ function updateScheduleModalRouteAnalysis(){
     return;
   }
 
-  var pairsToFetch = [{ id: 'home_pat', origin: homeAddr, destination: patAddr }];
-  var rHome = getRouteSyncOrApprox(homeAddr, patAddr);
-  var fuelHome = calcFuelCost(rHome.distanceKm);
+  var pairsToFetch = [];
+  if(homeAddr && patAddr){
+    pairsToFetch.push({ id: 'home_pat', origin: homeAddr, destination: patAddr });
+  }
+  var rHome = (homeAddr && patAddr) ? getRouteSyncOrApprox(homeAddr, patAddr) : null;
+  var fuelHome = (rHome && rHome.distanceKm) ? calcFuelCost(rHome.distanceKm) : null;
 
   var baseHora = (document.getElementById('schedHoraInput') ? document.getElementById('schedHoraInput').value : '') || '14:00';
   var durMin = parseInt(document.getElementById('schedDuracaoInput') ? document.getElementById('schedDuracaoInput').value : '50', 10) || 50;
@@ -7840,7 +7879,8 @@ function updateScheduleModalRouteAnalysis(){
       if(prevAddr){
         pairsToFetch.push({ id: 'prev_' + dIso, origin: prevAddr, destination: patAddr });
         var rPrev = getRouteSyncOrApprox(prevAddr, patAddr);
-        var driveMin = rPrev.durationMin;
+        var driveMin = rPrev ? rPrev.durationMin : 12;
+        var distKmPrev = rPrev ? rPrev.distanceKm : 4.5;
 
         if(gapFromPrev <= 25){
           var ok9 = (driveMin <= 9 && driveMin <= gapFromPrev);
@@ -7848,24 +7888,31 @@ function updateScheduleModalRouteAnalysis(){
           adjacentHtml += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;">' +
             '📅 <strong>' + formatDateBR(dIso) + '</strong> (após <strong>' + escapeHtml(prevName) + '</strong> das ' + escapeHtml(prevSc.hora) + ', termina ' + formatTimeMinutes(prevEnd) + '):<br>' +
             (ok9
-              ? '<span style="color:var(--ok);font-weight:700;">✅ Regra 8–9 min aprovada:</span> <strong>' + driveMin + ' min</strong> de carro (' + formatDistanceKm(rPrev.distanceKm) + ') para janela de ' + gapFromPrev + ' min.'
-              : '<span style="color:var(--err);font-weight:700;">⚠️ Atenção ao deslocamento:</span> <strong>' + driveMin + ' min</strong> de carro (' + formatDistanceKm(rPrev.distanceKm) + ') excede os 8–9 min (janela atual: ' + gapFromPrev + ' min). ' +
+              ? '<span style="color:var(--ok);font-weight:700;">✅ Regra 8–9 min aprovada:</span> <strong>' + driveMin + ' min</strong> de carro (' + formatDistanceKm(distKmPrev) + ') para janela de ' + gapFromPrev + ' min.'
+              : '<span style="color:var(--err);font-weight:700;">⚠️ Atenção ao deslocamento:</span> <strong>' + driveMin + ' min</strong> de carro (' + formatDistanceKm(distKmPrev) + ') excede os 8–9 min (janela atual: ' + gapFromPrev + ' min). ' +
                 '<button type="button" class="btn small ghost" style="width:auto;padding:2px 8px;font-size:11px;display:inline-flex;margin-left:4px;background:#fff;" onclick="applySuggestedHoraInModal(\''+sugTime+'\', \''+(schedModalMode==='batch'?dow:'')+'\')">Mudar para ' + sugTime + '</button>'
             ) +
           '</div>';
         } else {
           // Janela longa: verifica Casa vs Esperar na Rua
-          pairsToFetch.push({ id: 'prev_home_' + dIso, origin: prevAddr, destination: homeAddr });
-          var rToHome = getRouteSyncOrApprox(prevAddr, homeAddr);
-          var driveHomeTotal = rToHome.durationMin + rHome.durationMin;
-          var freeAtHome = gapFromPrev - driveHomeTotal;
-          adjacentHtml += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;">' +
-            '📅 <strong>' + formatDateBR(dIso) + '</strong> (após <strong>' + escapeHtml(prevName) + '</strong> às ' + escapeHtml(prevSc.hora) + ' — intervalo de ' + formatDurationHuman(gapFromPrev) + '):<br>' +
-            (freeAtHome >= 30
-              ? '<span style="color:var(--ok);font-weight:700;">🏠 Recomendado ir para a base:</span> ' + formatDurationHuman(freeAtHome) + ' livres na base (' + escapeHtml(getHomeAddressDisplayName()) + ') (deslocamento total ' + driveHomeTotal + ' min).'
-              : '<span style="color:var(--warn);font-weight:700;">☕ Recomendado aguardar na rua:</span> Ir direto leva só ' + driveMin + ' min (' + formatDistanceKm(rPrev.distanceKm) + ').'
-            ) +
-          '</div>';
+          if(homeAddr && rHome){
+            pairsToFetch.push({ id: 'prev_home_' + dIso, origin: prevAddr, destination: homeAddr });
+            var rToHome = getRouteSyncOrApprox(prevAddr, homeAddr);
+            var driveHomeTotal = (rToHome ? rToHome.durationMin : 12) + rHome.durationMin;
+            var freeAtHome = gapFromPrev - driveHomeTotal;
+            adjacentHtml += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;">' +
+              '📅 <strong>' + formatDateBR(dIso) + '</strong> (após <strong>' + escapeHtml(prevName) + '</strong> às ' + escapeHtml(prevSc.hora) + ' — intervalo de ' + formatDurationHuman(gapFromPrev) + '):<br>' +
+              (freeAtHome >= 30
+                ? '<span style="color:var(--ok);font-weight:700;">🏠 Recomendado ir para a base:</span> ' + formatDurationHuman(freeAtHome) + ' livres na base (' + escapeHtml(getHomeAddressDisplayName()) + ') (deslocamento total ' + driveHomeTotal + ' min).'
+                : '<span style="color:var(--warn);font-weight:700;">☕ Recomendado aguardar na rua:</span> Ir direto leva só ' + driveMin + ' min (' + formatDistanceKm(distKmPrev) + ').'
+              ) +
+            '</div>';
+          } else {
+            adjacentHtml += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;">' +
+              '📅 <strong>' + formatDateBR(dIso) + '</strong> (após <strong>' + escapeHtml(prevName) + '</strong> às ' + escapeHtml(prevSc.hora) + ' — intervalo de ' + formatDurationHuman(gapFromPrev) + '):<br>' +
+              '<span style="color:var(--ink-soft);">🚗 Trajeto direto: ~' + driveMin + ' min (' + formatDistanceKm(distKmPrev) + '). Configure seu endereço base para calcular tempo livre em casa.</span>' +
+            '</div>';
+          }
         }
       }
     }
@@ -7879,12 +7926,13 @@ function updateScheduleModalRouteAnalysis(){
       if(nextAddr && gapToNext <= 25){
         pairsToFetch.push({ id: 'next_' + dIso, origin: patAddr, destination: nextAddr });
         var rNext = getRouteSyncOrApprox(patAddr, nextAddr);
-        var driveNextMin = rNext.durationMin;
+        var driveNextMin = rNext ? rNext.durationMin : 12;
+        var distKmNext = rNext ? rNext.distanceKm : 4.5;
         var okNext9 = (driveNextMin <= 9 && driveNextMin <= gapToNext);
         adjacentHtml += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;">' +
           '📅 <strong>' + formatDateBR(dIso) + '</strong> (antes de <strong>' + escapeHtml(nextName) + '</strong> às ' + escapeHtml(nextSc.hora) + '):<br>' +
           (okNext9
-            ? '<span style="color:var(--ok);font-weight:700;">✅ Próximo paciente a ' + driveNextMin + ' min de carro</span> (' + formatDistanceKm(rNext.distanceKm) + ' — dentro do limite de 8–9 min).'
+            ? '<span style="color:var(--ok);font-weight:700;">✅ Próximo paciente a ' + driveNextMin + ' min de carro</span> (' + formatDistanceKm(distKmNext) + ' — dentro do limite de 8–9 min).'
             : '<span style="color:var(--err);font-weight:700;">⚠️ Próximo paciente (' + escapeHtml(nextName) + ' às ' + escapeHtml(nextSc.hora) + ') fica a ' + driveNextMin + ' min de carro</span> (termina ' + formatTimeMinutes(targetEndMin) + ', janela de ' + gapToNext + ' min).'
           ) +
         '</div>';
@@ -7895,11 +7943,21 @@ function updateScheduleModalRouteAnalysis(){
     if(adjacentHtml && dIdx >= 2) break;
   }
 
-  box.innerHTML = '<div class="route-connector ok" style="margin:4px 0;">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+  var baseSummaryHtml = '';
+  if(homeAddr && rHome && fuelHome){
+    baseSummaryHtml = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
       '<span>🚗 <strong>Da Base (' + escapeHtml(getHomeAddressDisplayName()) + ') → ' + escapeHtml(getPatientDisplayName(p)) + ':</strong> ~<strong>' + rHome.durationMin + ' min</strong> (' + formatDistanceKm(rHome.distanceKm) + ')</span>' +
       '<span style="font-size:11px;color:var(--ink-soft);">⛽ ' + fuelHome.liters.toFixed(2).replace('.', ',') + ' L (' + formatMoney(fuelHome.cost) + ' ida)</span>' +
-    '</div>' +
+    '</div>';
+  } else {
+    baseSummaryHtml = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);">' +
+      '<span>🏠 <strong>Endereço Base:</strong> Não configurado.</span>' +
+      '<button type="button" class="btn small ghost" style="width:auto;padding:2px 8px;font-size:11px;" onclick="openCalendarSettingsModal()">⚙️ Configurar Base</button>' +
+    '</div>';
+  }
+
+  box.innerHTML = '<div class="route-connector ok" style="margin:4px 0;">' +
+    baseSummaryHtml +
     adjacentHtml +
   '</div>';
 
@@ -7932,22 +7990,25 @@ async function previewPatientFormRoutes(currentPatId){
     return p.arquivado !== 'Sim' && p.id !== currentPatId && getPatientFullAddress(p);
   });
 
-  var pairs = [{ id: 'home', origin: homeAddr, destination: patAddr }];
+  var pairs = [];
+  if(homeAddr) pairs.push({ id: 'home', origin: homeAddr, destination: patAddr });
   activeOthers.forEach(function(o){
     pairs.push({ id: 'p_' + o.id, origin: patAddr, destination: getPatientFullAddress(o) });
   });
 
   var renderPreviewContent = function(){
-    var rHome = getRouteSyncOrApprox(homeAddr, patAddr);
-    var fHome = calcFuelCost(rHome.distanceKm);
-    var fRound = calcFuelCost(rHome.distanceKm * 2);
+    var rHome = homeAddr ? getRouteSyncOrApprox(homeAddr, patAddr) : null;
+    var fHome = (rHome && rHome.distanceKm) ? calcFuelCost(rHome.distanceKm) : null;
+    var fRound = (rHome && rHome.distanceKm) ? calcFuelCost(rHome.distanceKm * 2) : null;
 
     var otherRows = activeOthers.map(function(o){
       var oAddr = getPatientFullAddress(o);
       var r = getRouteSyncOrApprox(patAddr, oAddr);
-      return { patient: o, route: r, fuel: calcFuelCost(r.distanceKm) };
+      return { patient: o, route: r, fuel: calcFuelCost(r ? r.distanceKm : 4.5) };
     }).sort(function(a, b){
-      return a.route.durationMin - b.route.durationMin;
+      var durA = (a.route && a.route.durationMin) || 999;
+      var durB = (b.route && b.route.durationMin) || 999;
+      return durA - durB;
     });
 
     var othersHtml = '';
@@ -7957,14 +8018,16 @@ async function previewPatientFormRoutes(currentPatId){
       othersHtml = '<div style="font-size:11.5px;font-weight:700;color:var(--ink);margin:8px 0 4px;">🤝 Tempo de carro até outros pacientes (Regra de 8–9 min para encaixe consecutivo):</div>' +
         '<div style="display:flex;flex-direction:column;gap:4px;max-height:175px;overflow-y:auto;">' +
         otherRows.map(function(item){
-          var ok9 = item.route.durationMin <= 9;
+          var dur = (item.route && item.route.durationMin) || 12;
+          var dist = (item.route && item.route.distanceKm) || 4.5;
+          var ok9 = dur <= 9;
           return '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 8px;border-radius:6px;background:'+(ok9?'var(--ok-bg)':'#fff')+';border:1px solid '+(ok9?'rgba(94,123,71,0.35)':'var(--line)')+';font-size:11.5px;">' +
             '<div>' +
               '<strong>' + escapeHtml(getPatientDisplayName(item.patient)) + '</strong>' +
               (item.patient.bairro ? ' <span style="color:var(--ink-soft);">(' + escapeHtml(item.patient.bairro) + ')</span>' : '') +
             '</div>' +
             '<div style="text-align:right;white-space:nowrap;">' +
-              '<strong style="color:'+(ok9?'var(--ok)':'var(--primary-deep)')+';">' + item.route.durationMin + ' min</strong> (' + formatDistanceKm(item.route.distanceKm) + ') ' +
+              '<strong style="color:'+(ok9?'var(--ok)':'var(--primary-deep)')+';">' + dur + ' min</strong> (' + formatDistanceKm(dist) + ') ' +
               (ok9 ? '<span class="badge pago" style="font-size:9.5px;padding:1px 5px;margin-left:3px;">✅ Encaixe 14h→15h</span>' : '<span style="font-size:10px;color:var(--ink-soft);margin-left:3px;">Exige janela</span>') +
             '</div>' +
           '</div>';
@@ -7972,12 +8035,21 @@ async function previewPatientFormRoutes(currentPatId){
         '</div>';
     }
 
-    box.innerHTML = '<div style="font-weight:700;color:var(--primary-deep);margin-bottom:4px;">🏠 Distância da Base (' + escapeHtml(homeAddr ? homeAddr.split(',')[0] : 'Endereço Base') + '):</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;font-size:12px;">' +
-        '<span class="badge pago">🚗 <strong>' + rHome.durationMin + ' min</strong> de carro (' + formatDistanceKm(rHome.distanceKm) + ')</span>' +
-        '<span class="badge pendente">⛽ Ida: ' + fHome.liters.toFixed(2).replace('.', ',') + ' L (' + formatMoney(fHome.cost) + ') · Ida/Volta: ' + formatMoney(fRound.cost) + '</span>' +
-      '</div>' +
-      othersHtml;
+    var baseSectionHtml = '';
+    if(homeAddr && rHome && fHome && fRound){
+      baseSectionHtml = '<div style="font-weight:700;color:var(--primary-deep);margin-bottom:4px;">🏠 Distância da Base (' + escapeHtml(getHomeAddressDisplayName()) + '):</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;font-size:12px;">' +
+          '<span class="badge pago">🚗 <strong>' + rHome.durationMin + ' min</strong> de carro (' + formatDistanceKm(rHome.distanceKm) + ')</span>' +
+          '<span class="badge pendente">⛽ Ida: ' + fHome.liters.toFixed(2).replace('.', ',') + ' L (' + formatMoney(fHome.cost) + ') · Ida/Volta: ' + formatMoney(fRound.cost) + '</span>' +
+        '</div>';
+    } else {
+      baseSectionHtml = '<div style="background:var(--surface);padding:8px 10px;border-radius:6px;border:1px dashed var(--line);font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">' +
+        '<span>🏠 <strong>Endereço Base não configurado.</strong></span>' +
+        '<button type="button" class="btn small ghost" style="width:auto;padding:2px 8px;font-size:11px;" onclick="openCalendarSettingsModal()">⚙️ Configurar Base</button>' +
+      '</div>';
+    }
+
+    box.innerHTML = baseSectionHtml + othersHtml;
   };
 
   renderPreviewContent();
@@ -8100,7 +8172,12 @@ function runRouteSimulator(){
   var pairsToLoad = [];
 
   if(origVal === '__HOME__'){
-    if(!pDest){
+    if(!homeAddr){
+      resBox.innerHTML = '<div class="route-connector warn" style="margin-bottom:6px;">' +
+        '🏠 <strong>Endereço Base não configurado:</strong> Cadastre seu endereço base (sua casa ou consultório) para simular o trajeto de saída.<br>' +
+        '<button type="button" class="btn small ghost" style="width:auto;padding:3px 10px;font-size:11.5px;margin-top:6px;background:#fff;" onclick="openCalendarSettingsModal()">⚙️ Configurar Endereço Base</button>' +
+      '</div>';
+    } else if(!pDest){
       resBox.innerHTML = '';
     } else {
       var fakeFirst = { id: 'sim1', pacienteId: pDest.id, pacienteNome: pDest.nome, hora: hora2, duracaoMin: 50 };
@@ -8166,8 +8243,11 @@ function runRouteSimulator(){
       '</div>';
   } else {
     matBox.innerHTML = '<div style="background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:12px;font-size:11.5px;color:var(--ink-soft);line-height:1.45;">' +
-      'ℹ️ <strong>Nenhum outro paciente com endereço cadastrado no momento.</strong><br>' +
-      'Para que o ranking calcule os pacientes mais próximos e o custo de gasolina, preencha o campo de endereço ou bairro na ficha de cada paciente (aba Pacientes &rarr; Editar).' +
+      (!originAddr && origVal === '__HOME__'
+        ? '🏠 <strong>Endereço Base não configurado.</strong> Preencha seu endereço para ver os pacientes mais próximos da sua base. <button type="button" class="btn small ghost" style="width:auto;padding:2px 8px;font-size:11px;margin-top:4px;display:inline-flex;" onclick="openCalendarSettingsModal()">⚙️ Configurar Base</button>'
+        : (!originAddr
+            ? '📍 O paciente de origem selecionado não possui endereço ou bairro cadastrado na ficha.'
+            : 'ℹ️ <strong>Nenhum outro paciente com endereço cadastrado no momento.</strong><br>Para que o ranking calcule os pacientes mais próximos e o custo de gasolina, preencha o campo de endereço ou bairro na ficha de cada paciente (aba Pacientes &rarr; Editar).')) +
     '</div>';
   }
 

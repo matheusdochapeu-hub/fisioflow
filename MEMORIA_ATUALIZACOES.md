@@ -1,7 +1,29 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v19` (`sw.js`)
+Versão do Service Worker: `fisioflow-v20` (`sw.js`)
+
+---
+
+## 9. Auditoria Completa e Blindagem do Módulo de Rotas, Endereço Base e Consumo (`v20`)
+- **Blindagem Contra Exceções de Endereço Base Nulo (`TypeError: Cannot read properties of null`):**
+  - Identificado e corrigido ponto crítico em `updateScheduleModalRouteAnalysis()` onde `rHome.distanceKm` era acessado diretamente sem validar se `rHome` era nulo (ocorrendo quando o usuário ainda não havia configurado endereço base).
+  - Corrigido em `previewPatientFormRoutes()` o acesso direto a `rHome.distanceKm`, agora exibindo aviso amigável com botão direto para configurar a base, sem travar o cálculo de tempo de carro entre os outros pacientes.
+  - Blindado cálculo de intervalo longo `driveHomeTotal`: se `homeAddr` ou `rHome` não estiverem configurados, informa o trajeto direto e orienta o cadastro da base sem lançar exceção.
+- **Correção do Nome de Exibição da Base (`getHomeAddressDisplayName`):**
+  - Anteriormente, o algoritmo separava por hífen/vírgula e retornava cegamente o segundo elemento. Para endereços como `"Rua General Osório, 100 - Centro, Ribeirão Preto - SP"`, o segundo elemento era o número `"100"`, resultando no texto incorreto `"Saída da Base (100) → Paciente"`.
+  - Agora, o algoritmo filtra ativamente números de rua, CEPs, números de apartamento/sala e siglas de estado (UF), extraindo com precisão o nome real do bairro (ex.: `"Centro"` ou `"Jardim Sumaré"`).
+- **Dedução Automática de Cidade (`getUserCityFallback`):**
+  - Implementada função para extrair a cidade/UF do endereço base do usuário.
+  - Em `getPatientFullAddress(p)`, caso o fisioterapeuta cadastre apenas rua e bairro sem preencher a cidade, o sistema assume automaticamente a cidade do profissional, evitando que geocodificadores pesquisem o bairro em outros municípios ou estados, além de evitar duplicação caso a cidade já esteja no texto.
+- **Resiliência do Cálculo de Combustível (`calcFuelMetrics`):**
+  - Protegido contra `null`, `undefined` e `NaN` para quilometragem, garantindo valores seguros padrão para `kml` e preço do combustível e prevenindo divisão por zero.
+- **UX do Simulador de Rotas (`openRouteSimulatorModal` / `runRouteSimulator`):**
+  - Ao selecionar a origem `__HOME__` (Base / Consultório) com endereço vazio, o simulador exibe banner claro com botão direto de configuração em vez de tela em branco ou erro de proximidade.
+  - O ranking de proximidade informa claramente se o endereço base ainda não foi preenchido.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v20` em `sw.js`.
+  - Suíte de testes expandida para 41 testes unitários automatizados cobrindo todos os cenários de rotas, endereços, deduções de cidade e cálculo de combustível.
 
 ---
 
