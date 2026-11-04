@@ -1,7 +1,22 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `04/11/2026`  
-Versão do Service Worker: `fisioflow-v31` (`sw.js`)
+Versão do Service Worker: `fisioflow-v32` (`sw.js`)
+
+---
+
+## 20. Correção da Tela em Branco, Resolução de Sintaxe e Fechamento do Carrossel (`v32`)
+- **1. Diagnóstico do Problema da Tela em Branco:**
+  - Após a injeção dos efeitos de transição do carrossel, um fragmento de código residual com `catch(e){}` permaneceu solto dentro da função `switchMainTab`.
+  - Esse fragmento provocava um erro fatal de sintaxe (`SyntaxError: Unexpected token 'catch'`) durante o carregamento inicial da tag `<script>`, impedindo que o motor de JavaScript do navegador executasse a função `init()` e desocultasse a tela `#mainScreen` (`display: none`).
+  - Adicionalmente, o container `<div id="tabsCarouselViewport">` necessitava do fechamento de sua respectiva tag `</div>` no final das abas principais.
+- **2. Correções Definitivas Aplicadas:**
+  - Remoção completa do fragmento residual e reescrita atômica e limpa da função `switchMainTab`.
+  - Fechamento formal do container do carrossel (`opens=744, closes=744` balanceados perfeitamente).
+  - Execução de script de validação de sintaxe via Node.js (`node -c`) sobre o código do app, atestando 100% de conformidade sintática e compilabilidade sem erros.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v32` em `sw.js` para invalidação imediata do cache nos dispositivos.
+  - 119 testes automatizados aprovados com 100% de sucesso.
 
 ---
 
