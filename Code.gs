@@ -7,8 +7,6 @@
 var SHEET_ATEND = 'Atendimentos';
 var SHEET_PAC = 'Pacientes';
 var SHEET_EVO = 'Evolucoes';
-var SHEET_EXE = 'Exercicios';
-var SHEET_ROT = 'Rotinas';
 var SHEET_AGEND = 'Agendamentos';
 var SHEET_CONFIG = 'Configuracao';
 
@@ -19,9 +17,7 @@ var PAC_HEADERS = [
   'Documento', 'TCLE', 'Contrato', 'FrequenciaSemanal',
   'DiagClinico', 'DiagFuncional', 'Objetivos', 'Arquivado', 'Foto', 'NomeFantasia', 'OldNome'
 ];
-var EVO_HEADERS = ['ID', 'PacienteID', 'PacienteNome', 'Data', 'Hora', 'PA', 'FC', 'EstadoClinico', 'Condutas', 'CriadoEm'];
-var EXE_HEADERS = ['ID', 'Nome', 'Tipo', 'SeriesPadrao', 'RepsPadrao', 'Observacao', 'Imagem', 'CriadoEm'];
-var ROT_HEADERS = ['ID', 'PacienteID', 'PacienteNome', 'ExercicioID', 'Ordem', 'Series', 'Reps', 'Observacao', 'CriadoEm', 'Rotulo'];
+var EVO_HEADERS = ['ID', 'PacienteID', 'PacienteNome', 'Data', 'Hora', 'PA', 'FC', 'EstadoClinico', 'Condutas', 'CriadoEm', 'SPO2', 'Observacoes'];
 var AGEND_HEADERS = [
   'ID', 'PacienteID', 'PacienteNome', 'Data', 'Hora', 'DuracaoMin',
   'Valor', 'Status', 'Observacao', 'CalendarEventId', 'CalendarId', 'AtendimentoId', 'CriadoEm'
@@ -177,10 +173,23 @@ function getSheet_(name, headers) {
 function getAtendSheet_() { return getSheet_(SHEET_ATEND, ATEND_HEADERS); }
 function getPacSheet_()   { return getSheet_(SHEET_PAC, PAC_HEADERS); }
 function getEvoSheet_()   { return getSheet_(SHEET_EVO, EVO_HEADERS); }
-function getExeSheet_()   { return getSheet_(SHEET_EXE, EXE_HEADERS); }
-function getRotSheet_()   { return getSheet_(SHEET_ROT, ROT_HEADERS); }
 function getAgendSheet_() { return getSheet_(SHEET_AGEND, AGEND_HEADERS); }
 function getConfigSheet_() { return getSheet_(SHEET_CONFIG, CONFIG_HEADERS); }
+
+/** Remove automaticamente da planilha abas desnecessárias (ex.: Exercícios e Rotinas) */
+function cleanupUnusedSheets_() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return;
+    var toDelete = ['Exercicios', 'exercicios', 'Rotinas', 'rotinas'];
+    toDelete.forEach(function(sName) {
+      var sh = ss.getSheetByName(sName);
+      if (sh && ss.getSheets().length > 1) {
+        ss.deleteSheet(sh);
+      }
+    });
+  } catch (e) {}
+}
 
 function saveConfigInSheet_(cfg) {
   if (!cfg || typeof cfg !== 'object') return;
@@ -480,18 +489,43 @@ function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
 var DEFAULT_CALENDAR_ID = 'primary';
 var _resolvedCalendarCache = {};
 
+function isForbiddenDevCalendar_(calOrEmail) {
+  if (!calOrEmail) return false;
+  var em = (typeof calOrEmail === 'string' ? calOrEmail : (calOrEmail.getId ? calOrEmail.getId() : '')).toLowerCase();
+  return em.indexOf('matheusrodrigues1917@usp.br') !== -1 || em.indexOf('@usp.br') !== -1;
+}
+
+function getPatientCalendarColorId_(patientIdOrName) {
+  var str = String(patientIdOrName || 'Paciente').trim().toLowerCase();
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return String((Math.abs(hash) % 11) + 1);
+}
+
 function resolveUserCalendar_(calendarId) {
   var rawCid = String(calendarId || DEFAULT_CALENDAR_ID || '').trim();
   var cid = rawCid.toLowerCase();
   if (_resolvedCalendarCache[cid]) return _resolvedCalendarCache[cid];
 
   var defaultCal = null;
-  try { defaultCal = CalendarApp.getDefaultCalendar(); } catch (e) {}
+  try {
+    var rawDef = CalendarApp.getDefaultCalendar();
+    if (rawDef && !isForbiddenDevCalendar_(rawDef)) defaultCal = rawDef;
+  } catch (e) {}
+
   var effectiveEmail = '';
   try { effectiveEmail = Session.getEffectiveUser().getEmail().toLowerCase(); } catch (e2) {}
 
-  // 1. Se a conta que roda o script for a dona direta da agenda solicitada
-  if (defaultCal && (defaultCal.getId().toLowerCase() === cid || (effectiveEmail && effectiveEmail === cid) || cid === 'primary')) {
+  // Se executado pela conta de desenvolvedor da USP, proíbe gravação na conta pessoal do desenvolvedor
+  if (isForbiddenDevCalendar_(effectiveEmail)) {
+    defaultCal = null;
+  }
+
+  // 1. Se a conta que roda o script for a dona direta da agenda solicitada (e não for conta de desenvolvimento proibida)
+  if (defaultCal && !isForbiddenDevCalendar_(defaultCal) && (defaultCal.getId().toLowerCase() === cid || (effectiveEmail && effectiveEmail === cid) || cid === 'primary')) {
     var resDirect = {
       cal: defaultCal,
       calendarId: cid || defaultCal.getId(),
@@ -510,11 +544,12 @@ function resolveUserCalendar_(calendarId) {
     var targetVariants = [rawCid, cid];
     for (var vIdx = 0; vIdx < targetVariants.length; vIdx++) {
       var target = targetVariants[vIdx];
+      if (isForbiddenDevCalendar_(target)) continue;
       var customCal = null;
       try {
         customCal = CalendarApp.getCalendarById(target);
       } catch (e3) {}
-      if (customCal) {
+      if (customCal && !isForbiddenDevCalendar_(customCal)) {
         var resCustom = {
           cal: customCal,
           calendarId: target,
@@ -534,7 +569,7 @@ function resolveUserCalendar_(calendarId) {
       var allCals = CalendarApp.getAllCalendars() || [];
       for (var cIdx = 0; cIdx < allCals.length; cIdx++) {
         var c = allCals[cIdx];
-        if (!c) continue;
+        if (!c || isForbiddenDevCalendar_(c)) continue;
         var cIdLow = String(c.getId() || '').toLowerCase();
         var cNameLow = String(c.getName() || '').toLowerCase();
         if (cIdLow === cid || cNameLow === cid) {
@@ -554,7 +589,22 @@ function resolveUserCalendar_(calendarId) {
     } catch (eAll) {}
   }
 
-  // 3. Fallback inteligente: Se não puder gravar diretamente na agenda externa, vincula via convite
+  // 3. Fallback: Se for a conta USP ou se defaultCal não estiver disponível, nunca grava na conta USP!
+  if (isForbiddenDevCalendar_(effectiveEmail) || !defaultCal || isForbiddenDevCalendar_(defaultCal)) {
+    var resBlocked = {
+      cal: null,
+      calendarId: cid,
+      guestEmail: null,
+      targetGuest: null,
+      isOwner: false,
+      isDirectShared: false,
+      mode: 'blocked_dev_account',
+      warning: 'Agenda do usuário (' + cid + ') não encontrada para gravação direta. Bloqueada gravação na conta do desenvolvedor (USP).'
+    };
+    _resolvedCalendarCache[cid] = resBlocked;
+    return resBlocked;
+  }
+
   var resFallback = {
     cal: defaultCal,
     calendarId: cid || (defaultCal ? defaultCal.getId() : 'primary'),
@@ -611,8 +661,8 @@ function buildCalendarTitleAndDesc_(item) {
     };
   }
 
-  var prefix = item.status === 'Realizado' ? '✓ ' : '';
-  var title = prefix + 'Fisioterapia: ' + (item.pacienteDisplay || item.pacienteNome || 'Paciente');
+  // Formato estrito: "nome do paciente" e só
+  var title = item.pacienteDisplay || item.pacienteNome || 'Paciente';
   var descLines = ['Paciente: ' + (item.pacienteNome || item.pacienteDisplay || '')];
   if (item.telefone) descLines.push('Telefone: ' + item.telefone);
   if (item.observacao) descLines.push('Observações: ' + item.observacao);
@@ -632,7 +682,9 @@ function createCalendarEventForSchedule_(item) {
     var dates = parseScheduleDates_(item.data, item.hora, item.duracaoMin);
     if (!dates) return { eventId: '', warning: 'Data/hora inválida para o Google Agenda.' };
     var resolved = resolveUserCalendar_(item.calendarId);
-    if (!resolved.cal) return { eventId: '', warning: 'Agenda não encontrada.' };
+    if (!resolved.cal || isForbiddenDevCalendar_(resolved.cal)) {
+      return { eventId: '', warning: resolved.warning || 'Agenda do usuário não autorizada para escrita direta. Bloqueada gravação na conta pessoal do desenvolvedor.' };
+    }
 
     var calData = buildCalendarTitleAndDesc_(item);
 
@@ -650,13 +702,18 @@ function createCalendarEventForSchedule_(item) {
     try {
       ev = resolved.cal.createEvent(calData.title, dates.start, dates.end, opts);
     } catch (writeErr) {
-      // Fallback caso o usuário tenha compartilhado a agenda apenas como leitura: cria na agenda principal
-      var defCal = CalendarApp.getDefaultCalendar();
-      if (defCal && defCal.getId() !== resolved.cal.getId()) {
-        ev = defCal.createEvent(calData.title, dates.start, dates.end, opts);
-      } else {
-        throw writeErr;
+      return { eventId: '', warning: 'Erro ao gravar na agenda do usuário: ' + (writeErr.message || String(writeErr)) };
+    }
+
+    if (ev) {
+      if (!calData.isBlock) {
+        try {
+          var pKey = item.pacienteId || item.pacienteDisplay || item.pacienteNome || '';
+          ev.setColor(getPatientCalendarColorId_(pKey));
+        } catch (colErr) {}
+        try { ev.addPopupReminder(30); } catch (remErr) {}
       }
+      return { eventId: ev.getId(), warning: '' };
     }
 
     if (ev) {
@@ -688,7 +745,7 @@ function updateCalendarEventForSchedule_(item) {
     if (resolved.cal) {
       try { ev = resolved.cal.getEventById(item.calendarEventId); } catch (e) {}
     }
-    if (!ev) {
+    if (!ev && !isForbiddenDevCalendar_(CalendarApp.getDefaultCalendar())) {
       try { ev = CalendarApp.getDefaultCalendar().getEventById(item.calendarEventId); } catch (e2) {}
     }
     if (!ev) {
@@ -701,6 +758,12 @@ function updateCalendarEventForSchedule_(item) {
     ev.setTime(dates.start, dates.end);
     if (item.endereco !== undefined) ev.setLocation(calData.location);
     ev.setDescription(calData.description);
+    if (!calData.isBlock) {
+      try {
+        var pKey = item.pacienteId || item.pacienteDisplay || item.pacienteNome || '';
+        ev.setColor(getPatientCalendarColorId_(pKey));
+      } catch (colErr) {}
+    }
     return { eventId: ev.getId(), warning: '' };
   } catch (err) {
     return { eventId: item.calendarEventId || '', warning: err.message || String(err) };
@@ -715,7 +778,7 @@ function deleteCalendarEventForSchedule_(eventId, calendarId) {
     if (resolved.cal) {
       try { ev = resolved.cal.getEventById(eventId); } catch (e) {}
     }
-    if (!ev) {
+    if (!ev && !isForbiddenDevCalendar_(CalendarApp.getDefaultCalendar())) {
       try { ev = CalendarApp.getDefaultCalendar().getEventById(eventId); } catch (e2) {}
     }
     if (ev) ev.deleteEvent();
@@ -774,7 +837,7 @@ function buildIcsFeed_(items, usuarioId) {
     var dtEnd = String(it.Data).replace(/[^0-9]/g, '') + 'T' + endH + endM + '00';
 
     var isBlock = it.PacienteID === '__BLOQUEIO__' || it.Status === 'Ausência' || it.Status === 'Férias' || it.Tipo === 'Bloqueio';
-    var title = isBlock ? ('🏖️ ' + (it.PacienteNome || 'Férias / Ausência')) : ('Fisioterapia: ' + (it.PacienteNome || 'Paciente'));
+    var title = isBlock ? ('🏖️ ' + (it.PacienteNome || 'Férias / Ausência')) : (it.PacienteNome || 'Paciente');
     var summary = title.replace(/[\r\n]+/g, ' ');
     var desc = (it.Observacao ? ('Obs: ' + it.Observacao + '\n') : '') + 'Sincronizado automaticamente pelo FisioFlow.';
 
@@ -813,6 +876,8 @@ function doGet(e) {
   var targetSs = resolveSpreadsheet_(usuarioId, (e && e.parameter) || {});
   _currentSS_ = targetSs;
 
+  cleanupUnusedSheets_();
+
   var rawPac = sheetToObjects_(getPacSheet_());
   var cleanPac = rawPac.filter(function(p){
     return !isInvalidPatientName_(p.Nome) && !isInvalidOptionalName_(p.NomeFantasia);
@@ -831,8 +896,8 @@ function doGet(e) {
     atendimentos: sheetToObjects_(getAtendSheet_()),
     pacientes: cleanPac,
     evolucoes: sheetToObjects_(getEvoSheet_()),
-    exercicios: sheetToObjects_(getExeSheet_()),
-    rotinas: sheetToObjects_(getRotSheet_()),
+    exercicios: [],
+    rotinas: [],
     agendamentos: cleanAgend
   };
   _currentSS_ = null;
@@ -1087,8 +1152,7 @@ function doPost(e) {
       } catch (calCleanErr) {}
 
       deleteRowById_(getPacSheet_(), body.id);
-      // Remove em cascata rotinas, evoluções e agendamentos vinculados à paciente (coluna PacienteID = índice 1)
-      deleteRowsByField_(getRotSheet_(), 1, body.id);
+      // Remove em cascata evoluções e agendamentos vinculados ao paciente (coluna PacienteID = índice 1)
       deleteRowsByField_(getEvoSheet_(), 1, body.id);
       deleteRowsByField_(getAgendSheet_(), 1, body.id);
 
@@ -1270,7 +1334,9 @@ function doPost(e) {
         body.fc || '',
         body.estadoClinico || '',
         body.condutas || '',
-        new Date().toISOString()
+        new Date().toISOString(),
+        body.spo2 || '',
+        body.observacoes || ''
       ]);
 
     } else if (body.action === 'update_evolution') {
@@ -1282,59 +1348,19 @@ function doPost(e) {
       if (body.fc !== undefined) evoFields['FC'] = body.fc;
       if (body.estadoClinico !== undefined) evoFields['EstadoClinico'] = body.estadoClinico;
       if (body.condutas !== undefined) evoFields['Condutas'] = body.condutas;
+      if (body.spo2 !== undefined) evoFields['SPO2'] = body.spo2;
+      if (body.observacoes !== undefined) evoFields['Observacoes'] = body.observacoes;
       updateRowObjectById_(sEvo, body.id, evoFields);
 
     } else if (body.action === 'delete_evolution') {
       deleteRowById_(getEvoSheet_(), body.id);
 
-    /* ---------- Exercícios ---------- */
-    } else if (body.action === 'create_exercise') {
-      getExeSheet_().appendRow([
-        body.id, body.nome, body.tipo || '', body.seriesPadrao || '', body.repsPadrao || '',
-        body.observacao || '', body.imagem || '', new Date().toISOString()
-      ]);
-
-    } else if (body.action === 'update_exercise') {
-      var exe = getExeSheet_();
-      var exeFields = {};
-      if (body.nome !== undefined) exeFields['Nome'] = body.nome;
-      if (body.tipo !== undefined) exeFields['Tipo'] = body.tipo;
-      if (body.seriesPadrao !== undefined) exeFields['SeriesPadrao'] = body.seriesPadrao;
-      if (body.repsPadrao !== undefined) exeFields['RepsPadrao'] = body.repsPadrao;
-      if (body.observacao !== undefined) exeFields['Observacao'] = body.observacao;
-      if (body.imagem !== undefined) exeFields['Imagem'] = body.imagem;
-      updateRowObjectById_(exe, body.id, exeFields);
-
-    } else if (body.action === 'delete_exercise') {
-      deleteRowById_(getExeSheet_(), body.id);
-      deleteRowsByField_(getRotSheet_(), 3, body.id); // coluna ExercicioID (0-based = 3)
-
-    /* ---------- Rotinas ---------- */
-    } else if (body.action === 'create_routine_item') {
-      getRotSheet_().appendRow([
-        body.id, body.pacienteId || '', body.pacienteNome || '', body.exercicioId || '',
-        body.ordem || '', body.series || '', body.reps || '', body.observacao || '',
-        new Date().toISOString(), body.rotulo || ''
-      ]);
-
-    } else if (body.action === 'update_routine_item') {
-      var rot = getRotSheet_();
-      var rotFields = {};
-      if (body.ordem !== undefined) rotFields['Ordem'] = body.ordem;
-      if (body.series !== undefined) rotFields['Series'] = body.series;
-      if (body.reps !== undefined) rotFields['Reps'] = body.reps;
-      if (body.observacao !== undefined) rotFields['Observacao'] = body.observacao;
-      if (body.rotulo !== undefined) rotFields['Rotulo'] = body.rotulo;
-      updateRowObjectById_(rot, body.id, rotFields);
-
-    } else if (body.action === 'delete_routine_item') {
-      deleteRowById_(getRotSheet_(), body.id);
-
-    } else if (body.action === 'rename_routine') {
-      renameRoutineLabel_(body.pacienteId, body.rotuloAntigo, body.rotulo);
-
-    } else if (body.action === 'clear_routine') {
-      deleteRoutineByLabel_(body.pacienteId, body.rotulo);
+    /* ---------- Exercícios & Rotinas (Descontinuados - No-op para compatibilidade) ---------- */
+    } else if (body.action === 'create_exercise' || body.action === 'update_exercise' || body.action === 'delete_exercise' ||
+               body.action === 'create_routine_item' || body.action === 'update_routine_item' || body.action === 'delete_routine_item' ||
+               body.action === 'rename_routine' || body.action === 'clear_routine') {
+      result.handled = true;
+      result.warning = 'Exercícios e Rotinas foram removidos desta versão.';
 
     } else if (!body.action || body.action === 'create') {
       getAtendSheet_().appendRow([
@@ -1437,31 +1463,13 @@ function doPost(e) {
         sAgSheet.getRange(sAgSheet.getLastRow() + 1, 1, agRows.length, AGEND_HEADERS.length).setValues(agRows);
       }
 
-      // 5. Exercícios
-      if (Array.isArray(body.exercicios) && body.exercicios.length > 0) {
-        var eRows = body.exercicios.map(function(x) {
-          return [x.id, x.nome, x.tipo || '', x.seriesPadrao || '', x.repsPadrao || '', x.observacao || '', x.imagem || '', x.criadoEm || nowIso];
-        });
-        var sE = getExeSheet_();
-        sE.getRange(sE.getLastRow() + 1, 1, eRows.length, EXE_HEADERS.length).setValues(eRows);
-      }
-
-      // 6. Rotinas
-      if (Array.isArray(body.rotinas) && body.rotinas.length > 0) {
-        var rRows = body.rotinas.map(function(r) {
-          return [r.id, r.pacienteId || '', r.pacienteNome || '', r.exercicioId || '', r.ordem || '', r.series || '', r.reps || '', r.observacao || '', r.criadoEm || nowIso, r.rotulo || ''];
-        });
-        var sR = getRotSheet_();
-        sR.getRange(sR.getLastRow() + 1, 1, rRows.length, ROT_HEADERS.length).setValues(rRows);
-      }
-
       result.importedCounts = {
         pacientes: (body.pacientes || []).length,
         atendimentos: (body.atendimentos || []).length,
         evolucoes: (body.evolucoes || []).length,
         agendamentos: (body.agendamentos || []).length,
-        exercicios: (body.exercicios || []).length,
-        rotinas: (body.rotinas || []).length
+        exercicios: 0,
+        rotinas: 0
       };
 
     } else {
