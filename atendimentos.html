@@ -1495,7 +1495,7 @@ var exercises = [];
 var routines = [];
 var currentMonth = new Date();
 var agendaMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-var agendaSelectedDay = null;
+var agendaSelectedDay = isoDate(new Date());
 var schedModalMode = 'single'; // 'single' ou 'batch'
 var currentTab = 'pacientes';
 var _modalStatePushed = false;
@@ -4592,6 +4592,35 @@ function updateNewEvoScheduleUI(){
   }
 }
 
+
+function copyPreviousConductToNewEvo(){
+  var pSel = document.getElementById('newEvoPatient');
+  var txtCond = document.getElementById('newEvoCondutas');
+  if(!pSel || !txtCond) return;
+  var pid = pSel.value;
+  if(!pid){
+    showToast('Selecione um paciente primeiro.', 'info');
+    return;
+  }
+  var pObj = patients.find(function(x){ return x.id === pid; });
+  var prevEv = (evolutions || []).slice().sort(function(a, b){
+    var dtA = (a.data || '') + ' ' + (a.hora || '');
+    var dtB = (b.data || '') + ' ' + (b.hora || '');
+    return dtB.localeCompare(dtA);
+  }).find(function(ev){
+    var matchPid = (ev.pacienteId === pid);
+    var matchPName = pObj && (normName(ev.pacienteNome) === normName(pObj.nome) || normName(ev.pacienteNome) === normName(pObj.nomeFantasia));
+    return (matchPid || matchPName) && !!String(ev.condutas || '').trim();
+  });
+
+  if(prevEv && prevEv.condutas){
+    txtCond.value = prevEv.condutas;
+    showToast('Conduta anterior copiada (' + formatDateBR(prevEv.data) + ')!', 'ok');
+  } else {
+    showToast('Nenhuma conduta anterior encontrada para este paciente.', 'info');
+  }
+}
+
 async function submitNewEvolution(){
   var pId = document.getElementById('newEvoPatient').value;
   var p = patients.find(function(x){ return x.id === pId; });
@@ -6988,7 +7017,11 @@ function buildGCalApiPayload(sc){
   var dispName = isBlock ? (sc.pacienteNome || 'Ausência / Férias') : getSchedulePatientDisplayName(sc);
   var pObj = isBlock ? null : getSchedulePatientObj(sc);
 
-  var summary = isBlock ? (dispName + (sc.observacao ? ': ' + sc.observacao : '')) : ('Fisioterapia: ' + dispName);
+  var summary = isBlock ? ('🏖️ ' + (sc.pacienteNome || 'Ausência')) : dispName;
+  var pKey = String(sc.pacienteId || sc.pacienteNome || 'default').toLowerCase().trim();
+  var pHash = 0;
+  for(var ki = 0; ki < pKey.length; ki++){ pHash = ((pHash << 5) - pHash) + pKey.charCodeAt(ki); pHash |= 0; }
+  var colorId = String((Math.abs(pHash) % 11) + 1);
   var descLines = [];
   if(isBlock){
     descLines.push('Bloqueio de Horário / Ausência');
@@ -7011,6 +7044,7 @@ function buildGCalApiPayload(sc){
 
   return {
     summary: summary,
+    colorId: colorId,
     description: descLines.join('\n'),
     location: location,
     start: {
@@ -7417,7 +7451,7 @@ function haversineRoadEstimate(c1, c2){
 function getRouteSyncOrApprox(origin, dest){
   if(!origin || !dest) return null;
   if(normAddrKey(origin) === normAddrKey(dest)){
-    return { ok: true, distanceKm: 0.4, durationMin: 2, approx: false };
+    return { ok: true, distanceKm: 0, durationMin: 0, approx: false, sameLocation: true };
   }
   var key = makeRoutePairKey(origin, dest);
   var cache = getRouteCacheMap();
@@ -8298,6 +8332,105 @@ function renderAgendaCalendar(year, month, monthSchedules){
   html += '</div>';
   calEl.innerHTML = html;
 }
+/* ---------- Controle & Renderização da Aba Check-in Diário ---------- */
+function updateCheckinTabVisibility(){
+  var btn = document.getElementById('tabBtnCheckin');
+  var hasSched = Array.isArray(schedules) && schedules.length > 0;
+  if(btn){
+    if(hasSched){
+      btn.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+      if(currentTab === 'checkin') switchMainTab('agenda');
+    }
+  }
+}
+
+function renderCheckinTab(){
+  updateCheckinTabVisibility();
+  var dtEl = document.getElementById('checkinCurrentDayTime');
+  var listEl = document.getElementById('checkinTodayList');
+  if(!listEl) return;
+
+  var now = new Date();
+  var todayIsoStr = isoDate(now);
+  var weekdayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  var weekdayStr = weekdayNames[now.getDay()];
+  if(dtEl){
+    dtEl.textContent = weekdayStr + ', ' + formatDateBR(todayIsoStr) + ' · ' + isoTime(now);
+  }
+
+  var todayScheds = (schedules || []).filter(function(sc){
+    if(sc.data !== todayIsoStr) return false;
+    if(isBlockSchedule(sc)) return false;
+    if(sc.status === 'Cancelado' || sc.status === 'Ausência') return false;
+    return true;
+  }).sort(function(a, b){
+    return String(a.hora || '').localeCompare(String(b.hora || ''));
+  });
+
+  if(todayScheds.length === 0){
+    listEl.innerHTML = '<div class="empty" style="padding:28px 16px;">' +
+      '<div class="icon">📅</div>' +
+      '<h3>Nenhum paciente agendado para hoje</h3>' +
+      '<p>Data: ' + formatDateBR(todayIsoStr) + ' (' + weekdayStr + '). Agende um paciente para começar o dia ou registre um atendimento avulso acima.</p>' +
+      '<div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">' +
+        '<button class="btn primary small" style="width:auto;" onclick="openScheduleModal(\'\', \''+todayIsoStr+'\')">+ Agendar Paciente Hoje</button>' +
+      '</div>' +
+    '</div>';
+    return;
+  }
+
+  var html = todayScheds.map(function(sc){
+    var dispName = getSchedulePatientDisplayName(sc);
+    var p = getSchedulePatientObj(sc);
+    var isDone = sc.status === 'Realizado';
+    var addr = p ? [p.endereco, p.bairro].filter(Boolean).join(', ') : '';
+
+    return '<div class="card" style="margin-bottom:12px;padding:14px;border:1px solid '+(isDone ? '#bbf7d0' : 'var(--line)')+';background:'+(isDone ? '#f0fdf4' : 'var(--card-bg, #fff)')+';border-radius:12px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:15px;font-weight:800;color:var(--primary-deep);">' + escapeHtml(sc.hora || '--:--') + '</span>' +
+          '<span style="font-size:11.5px;color:var(--ink-soft);">(' + (parseInt(sc.duracaoMin, 10) || 50) + ' min)</span>' +
+        '</div>' +
+        (isDone ? '<span class="tag" style="background:#dcfce7;color:#15803d;font-weight:700;">✓ Realizado</span>' : '<span class="tag" style="background:#fef3c7;color:#b45309;font-weight:700;">Previsto</span>') +
+      '</div>' +
+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+        '<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;">' + renderPatientAvatar(p) + '</div>' +
+        '<div style="min-width:0;flex:1;">' +
+          '<div style="font-size:15px;font-weight:700;color:var(--ink);">' + escapeHtml(dispName) + '</div>' +
+          (addr ? '<div style="font-size:11.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ' + escapeHtml(addr) + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+
+      '<div style="margin-top:10px;">' +
+        (isDone
+          ? '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#dcfce7;border-radius:8px;font-size:12.5px;color:#15803d;font-weight:700;">' +
+              '<span>✅ Check-in Concluído</span>' +
+              '<button type="button" class="btn ghost small" style="width:auto;padding:3px 8px;font-size:11px;" onclick="undoCheckinFromTab(\''+sc.id+'\')">Desfazer</button>' +
+            '</div>'
+          : '<button type="button" class="btn primary" style="width:100%;padding:12px;font-size:14px;font-weight:700;background:#16a34a;border-color:#16a34a;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="doCheckinFromTab(\''+sc.id+'\')">' +
+              '<span>✓ Fazer Check-in</span>' +
+            '</button>'
+        ) +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  listEl.innerHTML = html;
+}
+
+async function doCheckinFromTab(schedId){
+  await completeScheduleCheckin(schedId);
+  renderCheckinTab();
+}
+
+async function undoCheckinFromTab(schedId){
+  await cancelScheduleCheckin(schedId);
+  renderCheckinTab();
+}
+
 
 var schedDowTimes = {};
 var schedDowCustom = {};
