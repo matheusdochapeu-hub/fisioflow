@@ -5,6 +5,22 @@ Versão do Service Worker: `fisioflow-v30` (`sw.js`)
 
 ---
 
+## 18. Efeito Visual de Swipe Views / Carrossel Interativo entre Abas (`v30`)
+- **1. Carrossel Visual em Tela Cheia:**
+  - As 5 abas principais do FisioFlow agora operam como um carrossel visual (`Swipe Views / Carousel`), com viewport dedicado (`.tabs-carousel-viewport`).
+  - Ao alternar entre abas (seja por toque nas abas do topo ou deslizando a tela), o conteúdo desliza de forma fluida:
+    - Aba seguinte desliza suavemente da direita para a esquerda (`swipe-in-right`).
+    - Aba anterior desliza suavemente da esquerda para a direita (`swipe-in-left`).
+- **2. Acompanhamento Físico do Dedo em Tempo Real (Touch Drag Follow):**
+  - Ao arrastar horizontalmente, a tela acompanha a posição do dedo milimetricamente (`translate3d(Xpx, 0, 0)`).
+  - Inclui efeito elástico nas extremidades (Check-in e Financeiro) com resistência progressiva.
+  - Se o usuário arrasta e solta sem atingir o limiar, o carrossel retorna à posição original com amortecimento mola (`cubic-bezier(0.25, 1, 0.5, 1)`).
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v30` em `sw.js`.
+  - Suíte de testes com 100% de aprovação.
+
+---
+
 ## 17. Consolidação e Portabilidade Completa das Inovações do App de Fisioterapia (`v30`)
 - **1. Correção Definitiva da Abertura de Modais no Primeiro Toque:**
   - Implementada proteção temporal `_modalOpenTs` com janela defensiva de 350ms em `closeModalBg` e `popstate`.
