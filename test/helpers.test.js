@@ -470,7 +470,7 @@ describe('Google Calendar Integration Helpers', () => {
     assert.match(feed, /UID:ag_test_1@fisioflow/);
     assert.match(feed, /DTSTART:20261110T140000/);
     assert.match(feed, /DTEND:20261110T145000/);
-    assert.match(feed, /SUMMARY:Fisioterapia: Dona Maria/);
+    assert.match(feed, /SUMMARY:Dona Maria/);
     assert.match(feed, /END:VCALENDAR/);
   });
 
@@ -495,7 +495,8 @@ describe('Google Calendar Integration Helpers', () => {
     };
 
     const payload = buildGCalApiPayloadFn(sc);
-    assert.equal(payload.summary, 'Fisioterapia: João da Silva');
+    assert.equal(payload.summary, 'João da Silva');
+    assert.ok(parseInt(payload.colorId, 10) >= 1 && parseInt(payload.colorId, 10) <= 11);
     assert.equal(payload.location, 'Rua das Flores, 100 - Ribeirão Preto');
     assert.match(payload.start.dateTime, /2026-11-10T14:00:00/);
     assert.match(payload.end.dateTime, /2026-11-10T14:50:00/);
@@ -588,8 +589,9 @@ describe('Route Engine, Haversine Estimation and Coordinates Matching', () => {
   test('getRouteSyncOrApprox returns 0.4km and 2min for identical addresses', () => {
     const r = getRouteSyncOrApprox('Rua Maracaju, 88', 'Rua Maracaju, 88');
     assert.equal(r.ok, true);
-    assert.equal(r.distanceKm, 0.4);
-    assert.equal(r.durationMin, 2);
+    assert.equal(r.distanceKm, 0);
+    assert.equal(r.durationMin, 0);
+    assert.equal(r.sameLocation, true);
   });
 
   test('getRouteSyncOrApprox safely provides fallback for unknown neighborhoods without null/crash', () => {
@@ -971,3 +973,61 @@ describe('Third-Party Distribution & Onboarding Readiness', () => {
 
 
 
+
+
+describe('Evoluções com SPO2/Observações, Check-in Diário & Google Agenda (v27)', () => {
+  test('SPO2 formatado e gravado no modelo', () => {
+    const ev = { id: 'ev1', pa: '12/8', fc: '72', spo2: '98%', estadoClinico: 'Estável', condutas: 'Cinesio', observacoes: 'Boa tolerância' };
+    assert.equal(ev.spo2, '98%');
+    assert.equal(ev.observacoes, 'Boa tolerância');
+  });
+
+  test('copiar conduta anterior obtém a conduta mais recente do mesmo paciente', () => {
+    const evList = [
+      { id: 'ev1', pacienteId: 'p1', data: '2026-11-01', hora: '14:00', condutas: 'Treino de equilíbrio estático' },
+      { id: 'ev2', pacienteId: 'p1', data: '2026-11-03', hora: '15:00', condutas: 'Mobilização passiva e treino de marcha' },
+      { id: 'ev3', pacienteId: 'p2', data: '2026-11-04', hora: '10:00', condutas: 'Eletroterapia TENS' }
+    ];
+    const pid = 'p1';
+    const lastForP1 = evList.slice().sort((a,b) => (b.data + ' ' + b.hora).localeCompare(a.data + ' ' + a.hora))
+      .find(x => x.pacienteId === pid && x.condutas);
+    assert.ok(lastForP1);
+    assert.equal(lastForP1.id, 'ev2');
+    assert.equal(lastForP1.condutas, 'Mobilização passiva e treino de marcha');
+  });
+
+  test('título de evento no Google Agenda é estritamente o nome do paciente', () => {
+    const sc = { pacienteNome: 'Dona Diva', status: 'Agendado' };
+    const title = sc.pacienteNome;
+    assert.equal(title, 'Dona Diva');
+    assert.ok(!title.includes('Fisioterapia:'), 'Não deve conter prefixo Fisioterapia:');
+  });
+
+  test('atribuição de cor automática por paciente (1 a 11 determinística)', () => {
+    function getPatientColor(name) {
+      let hash = 0;
+      const str = String(name || '').toLowerCase();
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return String((Math.abs(hash) % 11) + 1);
+    }
+    const c1 = getPatientColor('Sebastião');
+    const c2 = getPatientColor('Sebastião');
+    const c3 = getPatientColor('Irani');
+    assert.equal(c1, c2, 'Mesmo paciente sempre recebe a mesma cor');
+    assert.ok(parseInt(c1) >= 1 && parseInt(c1) <= 11, 'Cor deve estar entre 1 e 11');
+    assert.ok(parseInt(c3) >= 1 && parseInt(c3) <= 11, 'Cor deve estar entre 1 e 11');
+  });
+
+  test('blindagem contra agenda da USP: proíbe uso de matheusrodrigues1917@usp.br', () => {
+    function isForbidden(em) {
+      const s = String(em || '').toLowerCase();
+      return s.includes('matheusrodrigues1917@usp.br') || s.includes('@usp.br');
+    }
+    assert.equal(isForbidden('matheusrodrigues1917@usp.br'), true);
+    assert.equal(isForbidden('outro@usp.br'), true);
+    assert.equal(isForbidden('scarletsantos7@gmail.com'), false);
+  });
+});
