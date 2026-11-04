@@ -1,7 +1,35 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
-Data da consolidação: `02/11/2026`  
-Versão do Service Worker: `fisioflow-v27` (`sw.js`)
+Data da consolidação: `04/11/2026`  
+Versão do Service Worker: `fisioflow-v28` (`sw.js`)
+
+---
+
+## 15. Paridade Completa: Dia Vigente Padrão, Check-in Diário, SPO2, Google Agenda e Limpeza de Planilhas (`v28`)
+- **1. Visualização Padrão da Agenda para o Dia Vigente e Botão Evidente Mês/Hoje:**
+  - `agendaSelectedDay` inicializado como padrão na data atual (`isoDate(new Date())`).
+  - Inserido botão de alternância rápida em evidência na barra de filtros: `[📅 Ver mês inteiro]` / `[📅 Ver apenas hoje]` (`#agendaToggleScopeBtn`), facilitando o foco nos atendimentos do dia.
+- **2. Tempo de Deslocamento Zero para Pacientes com Mesmo Endereço:**
+  - Pacientes no mesmo endereço retornam `distanceKm: 0`, `durationMin: 0` e `sameLocation: true`.
+  - Exibição de conector suave e verde `"📍 Mesmo endereço / Sem deslocamento (0 min • 0 km)"`, eliminando falsos alertas de trânsito ou atraso.
+- **3. Google Agenda — Usuário Logado, Título Estritamente Nome do Paciente e Cores Automáticas:**
+  - Eventos criados exclusivamente para a conta logada do profissional autenticado, com blindagem total contra contas pessoais do desenvolvedor (`@usp.br` / `matheusrodrigues1917@usp.br`).
+  - Título do evento no Google Agenda e feeds iCalendar com o formato estrito "Nome do Paciente" e só.
+  - Atribuição automática de cor (`colorId` de 1 a 11) determinística para cada paciente na Google Agenda.
+- **4. Evoluções — Saturação de Oxigênio (SPO2), Copiar Conduta Anterior e Observações:**
+  - Campo de saturação de oxigênio adicionado a todas as evoluções clínicas, exibido no formato `SPO2: 98%` e persistido na coluna correspondente do Google Sheets.
+  - Botão `[✏️ Editar]` adicionado diretamente dentro da listagem de evoluções do paciente (`openPatientEvolutions`).
+  - Botão `[📋 Copiar conduta anterior]` na nova evolução, preenchendo automaticamente a conduta da sessão mais recente do paciente.
+  - Área dedicada para "Observações" abaixo de condutas fisioterapêuticas no formulário e nos cards.
+- **5. Aba "Check-in" de Uso Diário e Rápido:**
+  - Nova aba principal **"Check-in"** (`#tabBtnCheckin` / `#tabCheckinView`).
+  - Visibilidade dinâmica: surge na barra superior após o primeiro paciente ser agendado (`schedules.length > 0`).
+  - Cabeçalho com data, hora ao vivo, botão rápido `+ Registrar atendimento` e cards objetivos dos pacientes de hoje com o botão verde `[✓ Fazer Check-in]`.
+- **6. Limpeza das Tabelas do Google Sheets:**
+  - Exclusão e expurgo de abas desnecessárias como `Exercicios` e `Rotinas` via rotina de limpeza do `Code.gs`.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v28` em `sw.js`.
+  - 61 testes unitários automatizados passando com 100% de sucesso.
 
 ---
 
