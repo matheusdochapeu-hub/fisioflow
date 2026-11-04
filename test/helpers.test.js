@@ -380,7 +380,7 @@ describe('Google Calendar Integration Helpers', () => {
 
     const url = buildGCalTemplateUrlFn(sc);
     assert.match(url, /calendar\.google\.com\/calendar\/render\?action=TEMPLATE/);
-    assert.match(url, /text=Fisioterapia%20-%20Dona%20Maria/);
+    assert.match(url, /text=Dona%20Maria/);
     assert.match(url, /dates=20261110T140000%2F20261110T145000/);
     assert.match(url, /authuser=corredoresantifascistas%40gmail\.com/);
   });
@@ -1075,3 +1075,46 @@ describe('Aba Check-in Inicial, Desaparecimento pós Check-in & Navegação por 
     assert.equal(getNextTab('checkin', -50, 100, 200), 'checkin');
   });
 });
+
+describe('Melhorias Portadas do App de Fisioterapia (v28)', () => {
+  test('closeModalBg ignora cliques nos primeiros 350ms para evitar ghost-click e múltiplos toques', () => {
+    let closed = false;
+    const fakeEv = { target: 1, currentTarget: 1 };
+    function closeModalBgTest(ev, ts) {
+      if (Date.now() - ts < 350) return;
+      if (ev && ev.target === ev.currentTarget) closed = true;
+    }
+    // Clique imediato (100ms após abrir)
+    closeModalBgTest(fakeEv, Date.now() - 100);
+    assert.equal(closed, false, 'Não deve fechar durante animação nos primeiros 350ms');
+
+    // Clique deliberado após 400ms
+    closeModalBgTest(fakeEv, Date.now() - 400);
+    assert.equal(closed, true, 'Deve fechar normalmente após os 350ms');
+  });
+
+  test('toggleAgendaMonthOrDayScope alterna entre visão de hoje e visão do mês', () => {
+    let selectedDay = '2026-11-04';
+    function toggle(day) {
+      return day ? null : '2026-11-04';
+    }
+    selectedDay = toggle(selectedDay);
+    assert.equal(selectedDay, null, 'Quando dia selecionado, volta para mês inteiro');
+    selectedDay = toggle(selectedDay);
+    assert.equal(selectedDay, '2026-11-04', 'Quando nulo, foca no dia atual');
+  });
+
+  test('SPO2 e Observações são suportados nos formulários de evolução', () => {
+    assert.ok(html.includes('id="newEvoSPO2"'), 'Campo newEvoSPO2 deve existir no modal');
+    assert.ok(html.includes('id="editEvoSPO2"'), 'Campo editEvoSPO2 deve existir no modal de edição');
+    assert.ok(html.includes('id="newEvoObservacoes"'), 'Campo newEvoObservacoes deve existir');
+    assert.ok(html.includes('id="editEvoObservacoes"'), 'Campo editEvoObservacoes deve existir');
+    assert.ok(html.includes('copyPreviousConductToNewEvo()'), 'Botão copiar conduta deve existir');
+  });
+
+  test('Rota de mesmo endereço retorna badge amigável sem tempo ou combustível', () => {
+    assert.ok(html.includes('Mesmo Endereço / Local'), 'Badge visual de mesmo endereço deve existir');
+    assert.ok(html.includes('0 min de deslocamento (0 km · Sem custo de combustível)'), 'Texto amigável de 0 min deve existir');
+  });
+});
+

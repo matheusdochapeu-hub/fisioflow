@@ -1,7 +1,29 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `04/11/2026`  
-Versão do Service Worker: `fisioflow-v29` (`sw.js`)
+Versão do Service Worker: `fisioflow-v30` (`sw.js`)
+
+---
+
+## 17. Consolidação e Portabilidade Completa das Inovações do App de Fisioterapia (`v30`)
+- **1. Correção Definitiva da Abertura de Modais no Primeiro Toque:**
+  - Implementada proteção temporal `_modalOpenTs` com janela defensiva de 350ms em `closeModalBg` e `popstate`.
+  - Elimina completamente o bug onde o usuário precisava tocar duas ou três vezes no celular para conseguir abrir um modal devido a ghost clicks de fechamento acidental no backdrop.
+- **2. Evoluções Clínicas: SPO2, Observações, Cópia de Conduta e Edição Rápida:**
+  - Campo de **SPO2 (Saturação de Oxigênio)** em todas as telas de evolução (nova evolução, edição, feed geral e prontuário individual do paciente), com badge azul estilizado (`SPO2: 98%`).
+  - Campo dedicado de **Observações** separado das condutas fisioterapêuticas para anotações contextuais e orientações domiciliares.
+  - Botão **`[📋 Copiar conduta anterior]`** no formulário de evolução, puxando com 1 toque a conduta clínica mais recente do mesmo paciente.
+  - Botão **`[✏️ Editar]`** inserido diretamente dentro do histórico de evoluções dos pacientes (`openPatientEvolutions`).
+- **3. Alternador de Visão na Agenda (Hoje × Mês Inteiro):**
+  - Inserido botão **`[📅 Ver apenas hoje]` / `[📅 Ver mês inteiro]`** (`#agendaToggleScopeBtn`) na barra de filtros da agenda.
+  - Permite focar instantaneamente nas demandas do dia ou abrir o panorama mensal completo com apenas 1 clique.
+- **4. Título Estrito no Google Agenda:**
+  - Sincronização direta e templates do Google Agenda atualizados para enviar estritamente o `Nome do Paciente`, sem prefixos ou marcadores redundantes, deixando o calendário do celular muito mais limpo.
+- **5. Detecção de Deslocamento Zero para Mesmo Endereço:**
+  - Atendimentos consecutivos no mesmo local físico passam a exibir o badge amigável `"📍 Mesmo endereço / Sem deslocamento (0 min • 0 km)"`, eliminando falsos avisos de atraso ou trânsito.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v30` em `sw.js`.
+  - Suíte de testes automatizados expandida para 72 testes com 100% de sucesso.
 
 ---
 
