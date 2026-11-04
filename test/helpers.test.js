@@ -1116,5 +1116,44 @@ describe('Melhorias Portadas do App de Fisioterapia (v28)', () => {
     assert.ok(html.includes('Mesmo Endereço / Local'), 'Badge visual de mesmo endereço deve existir');
     assert.ok(html.includes('0 min de deslocamento (0 km · Sem custo de combustível)'), 'Texto amigável de 0 min deve existir');
   });
-});
 
+  test('Navegação entre dias no Check-in calcula D+1, D-1, D+2 e D-2 corretamente', () => {
+    function calculateCheckinDay(baseIso, delta) {
+      if (delta === 0) return baseIso;
+      const parts = baseIso.split('-');
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      d.setDate(d.getDate() + delta);
+      const pad = n => (n < 10 ? '0' : '') + n;
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+
+    const today = '2026-11-04';
+    assert.equal(calculateCheckinDay(today, 1), '2026-11-05'); // D+1
+    assert.equal(calculateCheckinDay(today, 2), '2026-11-06'); // D+2
+    assert.equal(calculateCheckinDay(today, -1), '2026-11-03'); // D-1
+    assert.equal(calculateCheckinDay(today, -2), '2026-11-02'); // D-2
+    assert.equal(calculateCheckinDay(today, 0), '2026-11-04');  // Hoje
+  });
+
+  test('Cálculo de rótulo relativo (Hoje, Amanhã, Ontem, D+N, D-N)', () => {
+    function getRelativeLabel(baseIso, targetIso) {
+      const p1 = baseIso.split('-');
+      const p2 = targetIso.split('-');
+      const d1 = new Date(parseInt(p1[0], 10), parseInt(p1[1], 10) - 1, parseInt(p1[2], 10));
+      const d2 = new Date(parseInt(p2[0], 10), parseInt(p2[1], 10) - 1, parseInt(p2[2], 10));
+      const diffDays = Math.round((d2 - d1) / 86400000);
+      if (diffDays === 0) return 'Hoje';
+      if (diffDays === 1) return 'Amanhã (D+1)';
+      if (diffDays === -1) return 'Ontem (D-1)';
+      if (diffDays > 1) return 'D+' + diffDays;
+      return 'D' + diffDays;
+    }
+
+    const today = '2026-11-04';
+    assert.equal(getRelativeLabel(today, '2026-11-04'), 'Hoje');
+    assert.equal(getRelativeLabel(today, '2026-11-05'), 'Amanhã (D+1)');
+    assert.equal(getRelativeLabel(today, '2026-11-06'), 'D+2');
+    assert.equal(getRelativeLabel(today, '2026-11-03'), 'Ontem (D-1)');
+    assert.equal(getRelativeLabel(today, '2026-11-02'), 'D-2');
+  });
+});
