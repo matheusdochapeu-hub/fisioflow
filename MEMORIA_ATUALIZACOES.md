@@ -1,7 +1,30 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `04/11/2026`  
-Versão do Service Worker: `fisioflow-v28` (`sw.js`)
+Versão do Service Worker: `fisioflow-v29` (`sw.js`)
+
+---
+
+## 16. Check-in como Aba Inicial, Proporcionalidade das Abas, Desaparecimento pós Check-in e Navegação por Swipe (`v29`)
+- **1. Check-in como Aba Inicial (à Esquerda de Pacientes):**
+  - O Check-in agora é posicionado como a primeira aba no cabeçalho superior (`#tabBtnCheckin`), à esquerda de "Pacientes", e passa a ser a aba ativa inicial ao abrir o app (`currentTab = 'checkin'`).
+- **2. Cabeçalho das Abas Proporcional e Anti-Quebra:**
+  - Corrigida a desproporção visual do cabeçalho de abas (`.main-tabs` e `.main-tab`):
+    - `line-height: 1`, `white-space: nowrap` e `flex: 1 1 0%` com distribuição balanceada entre as 5 abas.
+    - Eliminada completamente a quebra de linha de "Check-in" (evitando quebras em telas estreitas) e qualquer truncamento de texto.
+    - Suporte a rolagem horizontal suave (`overflow-x: auto; scrollbar-width: none`) e auto-scroll para manter a aba ativa sempre visível.
+- **3. Desaparecimento de Pacientes com Check-in Realizado:**
+  - Quando o check-in é confirmado (`doCheckinFromTab`), o card executa uma leve transição suave e o paciente **some da tela de Check-in**, desobstruindo a lista diária.
+  - O atendimento segue disponível e acessível em todas as outras abas ("Agenda", "Pacientes", "Evoluções" e "Financeiro").
+  - Ao concluir todos os check-ins do dia, o app exibe um card comemorativo amigável indicando a conclusão das sessões de hoje.
+- **4. Navegação por Gestos (Swipe) entre Abas:**
+  - Motor de gestos por toque integrado (`initSwipeNavigation`):
+    - Arrastar da direita para a esquerda: avança para a próxima aba (`Check-in -> Pacientes -> Agenda -> Evoluções -> Financeiro`).
+    - Arrastar da esquerda para a direita: retorna para a aba anterior.
+    - Proteção inteligente contra disparos acidentais durante digitação em campos de texto, uso de modais ou rolagem de página vertical.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v29` em `sw.js`.
+  - Suíte expandida para 64 testes unitários automatizados passando com 100% de sucesso.
 
 ---
 
