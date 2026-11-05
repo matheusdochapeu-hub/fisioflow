@@ -8,8 +8,8 @@ Este documento registra de forma definitiva a arquitetura, regras de negócio ap
 - **Repositório:** `matheusdochapeu-hub/fisioflow` (Branch: `main`)
 - **PWA & Front-End:** Single Page Application (SPA) em HTML5/Vanilla JavaScript + CSS moderno (alta performance em dispositivos móveis).
 - **Back-End / API:** Google Apps Script (`Code.gs`) integrado ao Google Sheets com arquitetura multi-tenant.
-- **Service Worker:** `fisioflow-v33` (`sw.js`).
-- **Suíte de Testes:** Node.js native test runner (`node --test test/helpers.test.js`) com 100% de aprovação (128 testes integrados).
+- **Service Worker:** `fisioflow-v34` (`sw.js`).
+- **Suíte de Testes:** Node.js native test runner (`node --test test/helpers.test.js`) com 100% de aprovação (136 testes integrados).
 
 ---
 
@@ -69,3 +69,4 @@ A interface é composta por 5 abas com proporção uniforme de 20%, sem quebra d
 - **Sincronização Multi-Dispositivo:** Ao abrir no celular ou computador, a versão mais recente da planilha do Google Sheets sempre prevalece sobre os caches locais de IndexedDB/localStorage.
 - **Limpeza de Planilhas:** As abas obsoletas `exercicios` e `rotinas` foram descontinuadas do fluxo ativo.
 - **PDFs sem Planos de Fundo:** Todos os PDFs exportados (Extrato, Prontuário de Evoluções, Comprovantes, Recibos e Relatórios) são gerados com fundo branco puro, limpo e profissional, sem marcas d'água decorativas, flores ou folhas (`marcaDaguaOutono` desativada).
+- **Aba Inicial Configurável:** A aba inicial ao abrir o app é por padrão o `Check-in Diário`, com seletor no painel de Configurações (`#defaultTabSelect`) permitindo ao fisioterapeuta escolher livremente qualquer uma das 5 abas (`getDefaultTab()`), com persistência local e fallback seguro.
