@@ -61,3 +61,18 @@ Se você ou algum usuário não quiser fazer o login do Google Cloud:
    > **`[📅 Abrir e Assinar no Google Agenda]`**
 3. O Google Agenda oficial abrirá perguntando: *"Deseja adicionar a agenda FisioFlow - Atendimentos?"*. Clique em **Adicionar**.
 4. **Funciona 100% no celular e no computador**, não expira a cada 1 hora e não exige autorização no Google Cloud.
+
+---
+
+## 📱 Como Ativar a Visualização no Aplicativo Google Agenda do Celular (Android)
+
+Quando uma agenda é assinada por link/iCal, o Google Agenda do computador a exibe imediatamente. Porém, no aplicativo do celular (Android), o Google mantém a sincronização de agendas externas desativada por padrão até que o usuário a ative uma única vez:
+
+1. No aplicativo **Google Agenda** do celular, abra o menu lateral (**☰** no canto superior esquerdo).
+2. Role o menu lateral até o final e toque em **⚙️ Configurações** (*Settings*).
+3. Na lista de contas, procure a seção do seu e-mail do Google (Gmail cadastrado).
+4. Logo abaixo de *Minha agenda* e *Tarefas*, toque em **"Mostrar mais"** (ou localize a agenda **Fisioflow**).
+5. Toque no nome da agenda **Fisioflow**.
+6. No topo da tela que abrir, **ative a chave "Sincronização"** (ela começa desligada por padrão).
+7. Volte para a tela principal do calendário, abra o menu lateral (**☰**) e toque no botão **🔄 Atualizar** (logo abaixo das opções de visualização no topo da lista).
+8. **Pronto!** A agenda Fisioflow e todos os atendimentos cadastrados aparecerão sincronizados no celular.
