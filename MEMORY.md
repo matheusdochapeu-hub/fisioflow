@@ -85,4 +85,5 @@ A interface é composta por 5 abas com proporção uniforme de 20%, sem quebra d
   - O nome da agenda no Google Agenda / RFC 5545 foi definido estritamente como **Fisioflow** (`X-WR-CALNAME:Fisioflow`, `NAME:Fisioflow`, `X-WR-CALDESC:Atendimentos Fisioflow`).
   - Resolução multi-tenant blindada em `resolveSpreadsheet_` e `doGet`: aceita tanto `usuarioId` quanto `email`, cruzando identificadores e garantindo que o feed iCal encontre a planilha do usuário e carregue seus agendamentos reais em vez de uma planilha em branco.
   - Passo de assinatura destacado como etapa inicial no onboarding (`setupScreen`) e abertura automática do modal de inclusão da agenda após criação da planilha.
-  - Validação via suíte de testes com 91 testes passando (100% de sucesso). Cache do service worker atualizado para `fisioflow-v36`.
+  - Botões de apoio ("Me pague um café", "Fale com o desenvolvedor" e "LGPD & Privacidade") removidos do topo e da área de setup, permanecendo exclusivamente no rodapé (`<footer>`) no final do aplicativo.
+  - Validação via suíte de testes com 92 testes passando (100% de sucesso). Cache do service worker atualizado para `fisioflow-v37`.

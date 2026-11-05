@@ -1269,6 +1269,20 @@ describe('Transparência e Sincronização Google Agenda (v33)', () => {
     assert.equal(res3.found, true);
     assert.equal(res3.sheetId, 'sheet_abc_456');
   });
+
+  test('botões de apoio (café, feedback, lgpd) existem apenas no rodapé inferior e não no topo/setup', () => {
+    const htmlAtend = fs.readFileSync(path.join(__dirname, '..', 'atendimentos.html'), 'utf8');
+    const setupIndex = htmlAtend.indexOf('id="setupScreen"');
+    const mainScreenIndex = htmlAtend.indexOf('id="mainScreen"');
+    const setupHtml = htmlAtend.substring(setupIndex, mainScreenIndex);
+    assert.equal(setupHtml.includes('openPixModal()'), false, 'openPixModal não deve estar no setup/topo');
+    assert.equal(setupHtml.includes('openFeedbackModal()'), false, 'openFeedbackModal não deve estar no setup/topo');
+    const footerIndex = htmlAtend.indexOf('<footer');
+    const footerHtml = htmlAtend.substring(footerIndex);
+    assert.ok(footerHtml.includes('openPixModal()'), 'openPixModal deve estar presente no rodapé');
+    assert.ok(footerHtml.includes('openFeedbackModal()'), 'openFeedbackModal deve estar presente no rodapé');
+    assert.ok(footerHtml.includes('openLgpdModal()'), 'openLgpdModal deve estar presente no rodapé');
+  });
 });
 
 describe('Exportação de PDF com Fundo Limpo (Remoção de Planos de Fundo)', () => {
