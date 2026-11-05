@@ -1055,6 +1055,17 @@
         </div>
 
         <div>
+          <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Aba inicial padrão ao abrir o app</label>
+          <select id="defaultTabSelect" style="width:100%;padding:10px;border-radius:var(--radius-xs);border:1px solid var(--line-strong);background:var(--card);color:var(--ink);font-size:14px;font-family:inherit;">
+            <option value="checkin">Check-in Diário (Padrão)</option>
+            <option value="pacientes">Pacientes</option>
+            <option value="agenda">Agenda</option>
+            <option value="evolucoes">Evoluções</option>
+            <option value="financeiro">Financeiro</option>
+          </select>
+        </div>
+
+        <div>
           <label style="font-weight:600;font-size:12px;color:var(--ink);display:block;margin-bottom:4px;">Seu E-mail do Google (Gmail)</label>
           <input id="calendarIdInput" type="email" autocomplete="email" placeholder="Ex: seuemail@gmail.com">
           <div style="font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.35;">
@@ -10667,6 +10678,12 @@ function exportSchedulesICS(){
 /* ============================================================
    CONFIGURAÇÕES, BACKUP & DIAGNÓSTICO
    ============================================================ */
+function getDefaultTab(){
+  var tab = (config && config.defaultTab) || localStorage.getItem('ff_default_tab') || 'checkin';
+  var validTabs = ['checkin', 'pacientes', 'agenda', 'evolucoes', 'financeiro'];
+  return (validTabs.indexOf(tab) > -1) ? tab : 'checkin';
+}
+
 async function saveSetup(){
   var name = document.getElementById('providerNameInput').value.trim();
   var doc = document.getElementById('providerDocInput').value.trim();
@@ -10679,6 +10696,8 @@ async function saveSetup(){
   var kmlVal = (kmlInput && parseFloat(kmlInput.value) > 0) ? parseFloat(kmlInput.value) : (getCarKmPerLiter() || 12);
   var gasInput = document.getElementById('providerGasPriceInput');
   var gasVal = (gasInput && parseFloat(gasInput.value) > 0) ? parseFloat(gasInput.value) : (getGasPrice() || 5.80);
+  var defaultTabInput = document.getElementById('defaultTabSelect');
+  var defaultTabVal = defaultTabInput ? defaultTabInput.value : getDefaultTab();
   var errEl = document.getElementById('setupError');
   errEl.classList.add('hidden');
 
@@ -10707,11 +10726,13 @@ async function saveSetup(){
     calendarId: calendarIdVal,
     homeAddress: address,
     carKmPerLiter: kmlVal,
-    gasPrice: gasVal
+    gasPrice: gasVal,
+    defaultTab: defaultTabVal
   });
 
   try{
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
+    localStorage.setItem('ff_default_tab', defaultTabVal);
     localStorage.setItem('ff_calendar_id', calendarIdVal);
     localStorage.setItem('ff_home_address', address);
     localStorage.setItem('ff_car_kml', String(kmlVal));
@@ -10761,6 +10782,7 @@ async function saveSetup(){
   document.getElementById('providerNameDisplay').textContent = name;
   updateMonthLabel();
   updateGCalBannerUI();
+  switchMainTab(defaultTabVal);
   await loadData();
 }
 
@@ -10792,6 +10814,9 @@ function openSettings(){
 
   document.getElementById('providerNameInput').value = (config && config.providerName) || '';
   document.getElementById('providerDocInput').value = (config && config.providerDoc) || '';
+  if(document.getElementById('defaultTabSelect')){
+    document.getElementById('defaultTabSelect').value = getDefaultTab();
+  }
   document.getElementById('providerContactInput').value = (config && config.providerContact) || '';
   if(document.getElementById('calendarIdInput')){
     document.getElementById('calendarIdInput').value = getUserCalendarId();
@@ -10840,6 +10865,9 @@ function cancelSetup(fromPopstate){
   // Mantém as configurações originais salvas e restaura os inputs
   document.getElementById('providerNameInput').value = (config && config.providerName) || '';
   document.getElementById('providerDocInput').value = (config && config.providerDoc) || '';
+  if(document.getElementById('defaultTabSelect')){
+    document.getElementById('defaultTabSelect').value = getDefaultTab();
+  }
   document.getElementById('providerContactInput').value = (config && config.providerContact) || '';
   if(document.getElementById('calendarIdInput')){
     document.getElementById('calendarIdInput').value = getUserCalendarId();
@@ -11059,8 +11087,7 @@ async function init(){
     }
   }catch(e){}
 
-  var savedTab = 'checkin';
-  try{ savedTab = localStorage.getItem('ff_active_tab') || 'checkin'; }catch(e){}
+  var savedTab = getDefaultTab();
 
   // Sanitização de cache: purga itens de férias ou exercícios salvos indevidamente como pacientes
   try{
