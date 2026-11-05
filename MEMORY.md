@@ -38,6 +38,7 @@ A interface é composta por 5 abas com proporção uniforme de 20%, sem quebra d
    - Campo dedicado para **Observações** logo abaixo de Condutas.
    - Botão **`[📋 Copiar conduta anterior]`** que puxa automaticamente a última conduta clínica do mesmo paciente.
    - Botão **`[✏️ Editar]`** disponível tanto no feed geral de evoluções quanto no histórico clínico de cada paciente.
+   - Botão **`[📄 Exportar em PDF]`** no topo da aba: exporta evoluções em lote permitindo selecionar o período (**Dia específico**, **Semana**, **Mês**, **Ano** ou **Todo o período**) e filtrar por um ou múltiplos pacientes com contadores dinâmicos de evoluções por paciente em tempo real.
 
 5. **`Financeiro`:**
    - Controle de honorários, sessões realizadas vs pendentes, previsão mensal e relatório de ausências/férias.
@@ -58,6 +59,14 @@ A interface é composta por 5 abas com proporção uniforme de 20%, sem quebra d
    - O título do evento no Google Agenda deve ser estritamente o **Nome do Paciente** (sem prefixos desnecessários).
    - Atribuição automática e determinística de cores por paciente (paleta de 1 a 11).
    - Criação silenciosa sem envio de convites ou notificações desnecessárias.
+3. **Google Cloud Console & OAuth 2.0 (Resolução do Erro 403: access_denied):**
+   - **Projeto:** `Concursos` (ID: `concursos-512413`, Número: `1006150921481`).
+   - **Link Direto:** [https://console.cloud.google.com/apis/credentials/consent?project=concursos-512413](https://console.cloud.google.com/apis/credentials/consent?project=concursos-512413).
+   - **Para liberar e-mail de teste:** Em *Público* > *Usuários de teste* > `+ Adicionar usuários` (`corredoresantifascistas@gmail.com`).
+   - **Para liberar para terceiros:** Em *Público* > *Status da publicação* > `Publicar aplicativo`.
+   - **Guia Completo no Repositório:** Consulte `GUIA_LIBERAR_GOOGLE_AGENDA.md`.
+4. **Assinatura iCal Permanente (Opção 2 - Recomendada):**
+   - Botão `[📅 Abrir e Assinar no Google Agenda]` abre diretamente o feed universal `webcal://`, permitindo sincronização em tempo real sem expiração de token e sem bloqueios de tela de consentimento do Google Cloud.
 3. **Regra de Mesmo Endereço (Deslocamento Zero):**
    - Atendimentos consecutivos no mesmo local/residência possuem tempo de deslocamento calculado como **0 min** e distância **0 km** ("📍 Mesmo endereço / Sem deslocamento").
 
@@ -70,3 +79,4 @@ A interface é composta por 5 abas com proporção uniforme de 20%, sem quebra d
 - **Limpeza de Planilhas:** As abas obsoletas `exercicios` e `rotinas` foram descontinuadas do fluxo ativo.
 - **PDFs sem Planos de Fundo:** Todos os PDFs exportados (Extrato, Prontuário de Evoluções, Comprovantes, Recibos e Relatórios) são gerados com fundo branco puro, limpo e profissional, sem marcas d'água decorativas, flores ou folhas (`marcaDaguaOutono` desativada).
 - **Aba Inicial Configurável:** A aba inicial ao abrir o app é por padrão o `Check-in Diário`, com seletor no painel de Configurações (`#defaultTabSelect`) permitindo ao fisioterapeuta escolher livremente qualquer uma das 5 abas (`getDefaultTab()`), com persistência local e fallback seguro.
+- **Exportação em Lote de Evoluções em PDF:** Função `openExportEvolutionsBatchModal` com suporte a filtros temporais (`dia`, `semana` com intervalo de segunda a domingo, `mes`, `ano` e `todo`), seleção de múltiplos pacientes, contagem reativa por paciente e cálculo de total no botão de geração, gerando prontuários limpos e individuais por paciente com `SPO2`, `Observações`, cabeçalho sem marcas d'água e carimbo profissional com data de emissão.
