@@ -1,7 +1,27 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `04/11/2026`  
-Versão do Service Worker: `fisioflow-v33` (`sw.js`)
+Versão do Service Worker: `fisioflow-v34` (`sw.js`)
+
+---
+
+## 23. Aba Inicial Padrão Configurável (Check-in como Padrão com Escolha em Configurações) (`v34`)
+- **1. Check-in Diário Estabelecido como Aba Inicial Padrão:**
+  - Ao carregar ou abrir o aplicativo, a aba ativa inicial agora é padronizada para o **Check-in Diário** (`checkin`), garantindo acesso imediato aos atendimentos do dia.
+- **2. Seletor de Aba Inicial no Painel de Configurações:**
+  - Adicionado campo seletor (`#defaultTabSelect`) no formulário de Configurações permitindo ao fisioterapeuta escolher livremente qual tela deve ser carregada por padrão:
+    - *Check-in Diário* (padrão recomendado)
+    - *Pacientes*
+    - *Agenda*
+    - *Evoluções*
+    - *Financeiro*
+- **3. Persistência e Sincronização Local:**
+  - A preferência é salva no objeto de configuração (`config.defaultTab`) e em `localStorage.getItem('ff_default_tab')`.
+  - Função `getDefaultTab()` implementada com validação estrita das 5 abas e fallback seguro para `'checkin'`.
+  - Ao salvar as configurações, o aplicativo já transiciona imediatamente para a aba selecionada.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v34` em `sw.js`.
+  - 136 testes automatizados cobrindo a seleção, persistência e fallback de abas.
 
 ---
 
