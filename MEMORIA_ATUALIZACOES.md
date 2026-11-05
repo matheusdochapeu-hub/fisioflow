@@ -5,6 +5,24 @@ Versão do Service Worker: `fisioflow-v33` (`sw.js`)
 
 ---
 
+## 22. Remoção de Planos de Fundo e Marcas D'água na Exportação de PDFs (`v33`)
+- **1. Fundo Limpo e Profissional em Todos os PDFs:**
+  - Removido completamente o plano de fundo decorativo com flores, folhas e transparência (`marcaDaguaOutono`) que era desenhado no canvas de todos os PDFs exportados.
+  - Eliminadas as invocações de plano de fundo em todas as quebras de página e paginações de:
+    - *Extrato Financeiro do Paciente* (`exportPatientStatement`).
+    - *Prontuário de Evoluções Clínicas* (`renderEvolutionsToPDF`).
+    - *Comprovante Consolidado e Mensal de Sessões* (`exportMonthlyStatementsPDF`).
+    - *Recibo Individual de Sessão* (`generateReceipt`).
+    - *Relatório Financeiro Anual e Mensal* (`exportFinancialReportPDF`).
+- **2. Ajuste de Cabeçalho e Compatibilidade:**
+  - A função `marcaDaguaOutono(doc, pageW, pageH)` foi convertida em um no-op seguro que não executa chamadas gráficas ao jsPDF (`doc.ellipse`, `doc.circle`, `doc.setGState`), preservando a compatibilidade sem poluir o documento.
+  - `receiptHeader` ajustado para manter fundo branco puro, garantindo máxima legibilidade, contraste profissional e economia de tinta/impressão.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v33` em `sw.js`.
+  - Suíte de testes automatizados expandida cobrindo a verificação de ausência de planos de fundo e no-op de marca d'água.
+
+---
+
 ## 21. Transparência, Correção de Notificações e Sincronização Google Agenda (`v33`)
 - **1. Eliminação de Notificações Falsas de Sucesso:**
   - Corrigido o bug onde o aplicativo notificava `"Sincronizado com o Google Agenda!"` de forma incondicional ao salvar um agendamento, mesmo quando o evento não havia sido gravado no Google Calendar por falta de autenticação ativa ou bloqueio de permissão.
