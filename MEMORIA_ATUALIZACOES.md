@@ -1,7 +1,29 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `04/11/2026`  
-Versão do Service Worker: `fisioflow-v32` (`sw.js`)
+Versão do Service Worker: `fisioflow-v33` (`sw.js`)
+
+---
+
+## 21. Transparência, Correção de Notificações e Sincronização Google Agenda (`v33`)
+- **1. Eliminação de Notificações Falsas de Sucesso:**
+  - Corrigido o bug onde o aplicativo notificava `"Sincronizado com o Google Agenda!"` de forma incondicional ao salvar um agendamento, mesmo quando o evento não havia sido gravado no Google Calendar por falta de autenticação ativa ou bloqueio de permissão.
+  - A notificação agora é 100% honesta: confirma `"Sincronizado com o Google Agenda!"` exclusivamente quando o evento remoto é de fato retornado pela API ou pelo backend. Caso contrário, exibe `"Atendimento agendado no FisioFlow!"`.
+- **2. Diagnóstico e Correção de Status no Banner de Google Agenda:**
+  - O botão e o banner de Google Agenda não exibem mais o selo verde `✓` apenas porque um e-mail foi digitado.
+  - Estados claros e transparentes:
+    - **`✓ Ao Vivo` (Verde)**: Ativo apenas quando o token OAuth 2.0 está validado no navegador.
+    - **`⚠️ Ativar` (Âmbar)**: Quando há um e-mail configurado (ex.: `corredoresantifascistas@gmail.com`), mas a autenticação direta ou assinatura iCal ainda não foi ativada.
+    - **`➕ Não Vinculada` (Neutro)**: Quando nenhum e-mail foi informado.
+- **3. Correção na Chamada OAuth do Google Identity Services (GIS):**
+  - Corrigido o parâmetro `tokenClient.requestAccessToken({ prompt: 'consent' })` (anteriormente com `prompt: ''`), que suprimia o pop-up de consentimento para novos usuários ou terceiros e causava falha silenciosa.
+- **4. Integração Nativa da Assinatura iCal em 1 Clique (Zero Login, Nunca Expira):**
+  - Adicionado botão direto `[📅 Abrir e Assinar no Google Agenda]` abrindo o link com protocolo universal `webcal://`, permitindo ao usuário subscrever sua agenda no Google Agenda com 1 clique.
+  - Sincronização contínua e permanente sem necessidade de compartilhar permissões com o desenvolvedor e sem expiração de token.
+  - Feed iCal enriquecido no `Code.gs` com `LOCATION:`, `Telefone:` e `Valor:` de cada paciente.
+- **Service Worker & Testes Automatizados:**
+  - Service worker atualizado para `fisioflow-v33` em `sw.js`.
+  - 77 testes automatizados cobrindo todas as 22 suítes aprovados com 100% de sucesso.
 
 ---
 

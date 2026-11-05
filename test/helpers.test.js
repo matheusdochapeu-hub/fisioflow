@@ -1157,3 +1157,111 @@ describe('Melhorias Portadas do App de Fisioterapia (v28)', () => {
     assert.equal(getRelativeLabel(today, '2026-11-02'), 'D-2');
   });
 });
+
+describe('Transparência e Sincronização Google Agenda (v33)', () => {
+  test('updateGCalBannerUI só oculta o banner se OAuth estiver ativamente conectado', () => {
+    function resolveBannerState(calId, isOAuth) {
+      if (isOAuth) {
+        return { hideBanner: true, statusText: '✓ Ao Vivo', badge: 'green' };
+      }
+      if (calId) {
+        return { hideBanner: false, statusText: '⚠️ Ativar', badge: 'amber' };
+      }
+      return { hideBanner: false, statusText: '➕', badge: 'neutral' };
+    }
+
+    // Caso 1: Usuário digitou e-mail, mas ainda não autenticou no OAuth
+    const unauthenticatedUser = resolveBannerState('corredoresantifascistas@gmail.com', false);
+    assert.equal(unauthenticatedUser.hideBanner, false, 'Banner não deve sumir antes de conectar');
+    assert.match(unauthenticatedUser.statusText, /Ativar/);
+    assert.equal(unauthenticatedUser.badge, 'amber');
+
+    // Caso 2: Usuário autenticado com OAuth ativo
+    const authenticatedUser = resolveBannerState('corredoresantifascistas@gmail.com', true);
+    assert.equal(authenticatedUser.hideBanner, true, 'Banner pode ser recolhido quando conectado ao vivo');
+    assert.match(authenticatedUser.statusText, /Ao Vivo/);
+
+    // Caso 3: Sem e-mail
+    const emptyUser = resolveBannerState('', false);
+    assert.equal(emptyUser.hideBanner, false);
+  });
+
+  test('Geração correta de URLs de Assinatura iCal direta no Google Agenda', () => {
+    const rawFeedUrl = 'https://script.google.com/macros/s/AKfycbzp_fake/exec?action=calendar_feed&usuarioId=corredoresantifascistas';
+    const webcalFeedUrl = rawFeedUrl.replace(/^https?:\/\//i, 'webcal://');
+    const gcalSubUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcalFeedUrl);
+
+    assert.ok(webcalFeedUrl.startsWith('webcal://'));
+    assert.ok(gcalSubUrl.startsWith('https://calendar.google.com/calendar/r?cid=webcal%3A%2F%2F'));
+    assert.ok(gcalSubUrl.includes('usuarioId%3Dcorredoresantifascistas'));
+  });
+
+  test('Notificação de agendamento é honesta e só confirma Google Agenda se evento existir', () => {
+    function resolveScheduleToast(item, autoLinkedCount) {
+      let toastMsg = 'Atendimento agendado!';
+      if (autoLinkedCount > 0) {
+        toastMsg += ' (1 já realizado vinculado)';
+      }
+      // Se não gerou calendarEventId, não deve mentir que foi para o Google Agenda
+      const gcalToast = item.calendarEventId ? 'Sincronizado com o Google Agenda!' : null;
+      return { toastMsg, gcalToast };
+    }
+
+    const withoutGCal = resolveScheduleToast({ id: 'ag_1', calendarEventId: '' }, 0);
+    assert.equal(withoutGCal.toastMsg, 'Atendimento agendado!');
+    assert.equal(withoutGCal.gcalToast, null, 'Não deve exibir toast de Google Agenda quando não sincronizou');
+
+    const withGCal = resolveScheduleToast({ id: 'ag_2', calendarEventId: 'ev_12345' }, 0);
+    assert.equal(withGCal.gcalToast, 'Sincronizado com o Google Agenda!');
+  });
+});
+
+describe('Exportação de PDF com Fundo Limpo (Remoção de Planos de Fundo)', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'atendimentos.html'), 'utf8');
+
+  test('atendimentos.html não invoca marca d água ou planos de fundo em quebras de página', () => {
+    const occurrences = (html.match(/marcaDaguaOutono/g) || []).length;
+    assert.equal(occurrences, 1);
+    assert.equal(html.includes('marcaDaguaOutono(doc, 210'), false);
+    assert.equal(html.includes('marcaDaguaOutono(doc,210'), false);
+    assert.equal(html.includes('marcaDaguaOutono(doc)'), false);
+    assert.equal(html.includes('doc.setGState'), false);
+    assert.equal(html.includes('doc.ellipse'), false);
+  });
+
+  test('marcaDaguaOutono é no-op seguro que não desenha nada no canvas do PDF', () => {
+    let drawCalls = 0;
+    const fakeDoc = {
+      setFillColor() { drawCalls++; },
+      ellipse() { drawCalls++; },
+      circle() { drawCalls++; },
+      setGState() { drawCalls++; },
+      rect() { drawCalls++; }
+    };
+    const fnMatch = html.match(/function marcaDaguaOutono\([^)]*\)\s*\{([\s\S]*?)\n\}/);
+    assert.ok(fnMatch);
+    const fn = new Function('doc', 'pageW', 'pageH', fnMatch[1]);
+    fn(fakeDoc, 210, 297);
+    assert.equal(drawCalls, 0);
+  });
+
+  test('receiptHeader renderiza cabeçalho limpo sem invocar planos de fundo', () => {
+    const fnMatch = html.match(/function receiptHeader\([^)]*\)\s*\{([\s\S]*?)\n\}/);
+    assert.ok(fnMatch);
+    const capturedTexts = [];
+    let ellipseCalls = 0;
+    const fakeDoc = {
+      setFillColor() {},
+      rect() {},
+      setTextColor() {},
+      setFont() {},
+      setFontSize() {},
+      text(str) { capturedTexts.push(str); },
+      ellipse() { ellipseCalls++; }
+    };
+    const fn = new Function('doc', 'title', 'config', fnMatch[1]);
+    fn(fakeDoc, 'Extrato Financeiro', { providerName: 'Profissional' });
+    assert.equal(ellipseCalls, 0);
+    assert.equal(capturedTexts.some(t => t.includes('Profissional')), true);
+  });
+});

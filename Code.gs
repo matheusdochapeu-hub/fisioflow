@@ -839,7 +839,11 @@ function buildIcsFeed_(items, usuarioId) {
     var isBlock = it.PacienteID === '__BLOQUEIO__' || it.Status === 'Ausência' || it.Status === 'Férias' || it.Tipo === 'Bloqueio';
     var title = isBlock ? ('🏖️ ' + (it.PacienteNome || 'Férias / Ausência')) : (it.PacienteNome || 'Paciente');
     var summary = title.replace(/[\r\n]+/g, ' ');
-    var desc = (it.Observacao ? ('Obs: ' + it.Observacao + '\n') : '') + 'Sincronizado automaticamente pelo FisioFlow.';
+    var descLines = [];
+    if (it.Observacao) descLines.push('Obs: ' + it.Observacao);
+    if (it.Telefone) descLines.push('Telefone: ' + it.Telefone);
+    if (it.Valor) descLines.push('Valor: R$ ' + it.Valor);
+    descLines.push('Sincronizado automaticamente pelo FisioFlow.');
 
     lines.push('BEGIN:VEVENT');
     lines.push('UID:' + (it.ID || ('ag_' + Date.now())) + '@fisioflow');
@@ -847,7 +851,10 @@ function buildIcsFeed_(items, usuarioId) {
     lines.push('DTSTART:' + dtStart);
     lines.push('DTEND:' + dtEnd);
     lines.push('SUMMARY:' + summary);
-    lines.push('DESCRIPTION:' + desc.replace(/[\r\n]+/g, '\\n'));
+    if (it.Endereco) {
+      lines.push('LOCATION:' + String(it.Endereco).replace(/[\r\n]+/g, ', '));
+    }
+    lines.push('DESCRIPTION:' + descLines.join('\\n'));
     lines.push('STATUS:CONFIRMED');
     lines.push('END:VEVENT');
   });

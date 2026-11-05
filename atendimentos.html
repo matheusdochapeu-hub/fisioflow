@@ -4395,7 +4395,7 @@ function generatePatientStatementPDF(patientId){
   var total = 0, recebido = 0, pendente = 0;
   doc.setFontSize(10);
   pEntries.slice().reverse().forEach(function(s, i){
-    if(rowY + rowH > 260){ doc.addPage(); marcaDaguaOutono(doc,210,297); rowY = 20; }
+    if(rowY + rowH > 260){ doc.addPage(); rowY = 20; }
     if(i % 2 === 0){ doc.setFillColor(248,236,224); doc.rect(15, rowY, 180, rowH, 'F'); }
     doc.setTextColor(58,42,32);
     doc.text(formatDateBR(s.data), 19, rowY+6);
@@ -5082,7 +5082,6 @@ function renderEvolutionsToPDF(list, mainTitle, subtitle){
   list.forEach(function(ev){
     if(y > 240){
       doc.addPage();
-      marcaDaguaOutono(doc, 210, 297);
       y = 20;
     }
 
@@ -5987,7 +5986,7 @@ function submitMonthlyReceipt(){
     var pTotal = 0;
     doc.setFontSize(9.5);
     item.sessions.forEach(function(s, sIdx){
-      if(rY + rH > 255){ doc.addPage(); marcaDaguaOutono(doc,210,297); rY = 20; }
+      if(rY + rH > 255){ doc.addPage(); rY = 20; }
       if(sIdx % 2 === 0){ doc.setFillColor(248,236,224); doc.rect(15, rY, 180, rH, 'F'); }
       doc.setTextColor(58,42,32);
       doc.text(formatDateBR(s.data), 19, rY+6);
@@ -6761,7 +6760,7 @@ function exportAnnualFinancialPDF(){
 
   if(repMonthFilter !== 'all'){
     list.slice().sort(function(a,b){ return String(a.data).localeCompare(String(b.data)); }).forEach(function(s, idx){
-      if(rowY + rowH > 260){ doc.addPage(); marcaDaguaOutono(doc,210,297); rowY = 20; }
+      if(rowY + rowH > 260){ doc.addPage(); rowY = 20; }
       if(idx % 2 === 0){ doc.setFillColor(248,236,224); doc.rect(15, rowY, 180, rowH, 'F'); }
       doc.setTextColor(58,42,32); doc.setFontSize(9);
       doc.text(formatDateBR(s.data), 19, rowY+5.5);
@@ -6803,54 +6802,11 @@ function exportAnnualFinancialPDF(){
 }
 
 /* ============================================================
-   MARCA D'ÁGUA E CABEÇALHOS DE PDF
+   CABEÇALHOS E UTILITÁRIOS DE PDF (FUNDO LIMPO E PROFISSIONAL)
    ============================================================ */
 function marcaDaguaOutono(doc, pageW, pageH){
-  function rgb(c){ doc.setFillColor(c[0], c[1], c[2]); }
-  function flor(cx, cy, size, rot, petala, miolo){
-    var n = 6, pr = size*0.52;
-    for(var k=0;k<n;k++){
-      var a = rot + k*(2*Math.PI/n);
-      var px = cx + Math.cos(a)*pr, py = cy + Math.sin(a)*pr;
-      rgb(petala);
-      doc.ellipse(px, py, size*0.42, size*0.24, 'F');
-    }
-    rgb(miolo); doc.circle(cx, cy, size*0.26, 'F');
-  }
-  function folha(cx, cy, size, rot, cor){
-    var cos=Math.cos(rot), sin=Math.sin(rot);
-    function P(x,y){ return [cx + (x*cos - y*sin), cy + (x*sin + y*cos)]; }
-    rgb(cor);
-    var l1=P(0,-size*0.30), l2=P(0,size*0.30);
-    doc.ellipse(l1[0], l1[1], size*0.34, size*0.6, 'F');
-    doc.ellipse(l2[0], l2[1], size*0.34, size*0.6, 'F');
-  }
-
-  var terracota=[196,120,70], ambar=[201,138,43], oliva=[150,125,60],
-      vinho=[160,70,52], mostarda=[196,160,70], miolo=[150,96,40];
-
-  var itens = [
-    [30, 60, 12, 0.5, 0, terracota],
-    [172, 50, 11, -0.4, 1, ambar],
-    [60, 120, 10, 1.2, 1, mostarda],
-    [150, 140, 13, 0.2, 0, oliva],
-    [28, 200, 12, -0.3, 1, terracota],
-    [185, 185, 11, 0.9, 0, vinho],
-    [95, 215, 10, 2.3, 0, ambar],
-    [160, 255, 12, 0.6, 1, oliva],
-    [40, 268, 11, -1.0, 0, mostarda],
-    [110, 285, 10, 1.5, 1, vinho]
-  ];
-
-  var hasG = typeof doc.GState === 'function' && typeof doc.setGState === 'function';
-  if(!hasG) return;
-  doc.setGState(new doc.GState({opacity:0.2}));
-  itens.forEach(function(it){
-    if(it[4] === 1) flor(it[0], it[1], it[2], it[3], it[5], miolo);
-    else folha(it[0], it[1], it[2], it[3], it[5]);
-  });
-  doc.setGState(new doc.GState({opacity:1}));
-  doc.setDrawColor(0,0,0); doc.setLineWidth(0.2);
+  // Planos de fundo decorativos removidos: os PDFs são exportados com fundo limpo e profissional
+  return;
 }
 
 function drawStamp(doc, x, y){
@@ -6865,7 +6821,6 @@ function drawStamp(doc, x, y){
 }
 
 function receiptHeader(doc, title){
-  marcaDaguaOutono(doc, 210, 297);
   doc.setFillColor(181,84,46);
   doc.rect(0, 0, 210, 30, 'F');
   doc.setTextColor(255,255,255);
@@ -6931,19 +6886,23 @@ function updateGCalBannerUI(){
   var syncAllBtn = document.getElementById('gcalSyncAllBtn');
   var icsBtn = document.getElementById('agendaExportIcsBtn');
   var gcalActionBtn = document.getElementById('agendaGCalBtn');
+  var isOAuthConnected = !!obterGoogleCalendarTokenSalvo();
 
   if(gcalActionBtn){
-    if(calId){
-      gcalActionBtn.innerHTML = '⚙️ Google Agenda <span style="color:var(--success);font-weight:900;margin-left:2px;">✓</span>';
-      gcalActionBtn.title = 'Google Agenda vinculado a ' + calId + '. Toque para gerenciar configurações.';
+    if(isOAuthConnected){
+      gcalActionBtn.innerHTML = '⚙️ Google Agenda <span style="color:var(--success);font-weight:900;margin-left:2px;">✓ Ao Vivo</span>';
+      gcalActionBtn.title = 'Google Agenda conectado em tempo real via OAuth (' + (calId || 'Principal') + '). Sincronização 100% automática ativa.';
+    } else if(calId){
+      gcalActionBtn.innerHTML = '⚙️ Google Agenda <span style="color:#d97706;font-weight:700;margin-left:2px;">⚠️ Ativar</span>';
+      gcalActionBtn.title = 'E-mail ' + calId + ' configurado, mas a sincronização automática direta ou assinatura iCal precisa ser ativada. Toque para conectar.';
     } else {
-      gcalActionBtn.innerHTML = '⚙️ Google Agenda <span style="color:var(--accent-ink);margin-left:2px;">⚠️</span>';
-      gcalActionBtn.title = 'Google Agenda não vinculado. Toque para configurar.';
+      gcalActionBtn.innerHTML = '⚙️ Google Agenda <span style="color:var(--accent-ink);margin-left:2px;">➕</span>';
+      gcalActionBtn.title = 'Google Agenda não vinculada. Toque para configurar.';
     }
   }
 
-  // Quando vinculado, recolhe/oculta o banner volumoso do topo conforme solicitado
-  if(calId){
+  // Quando conectado diretamente via OAuth ativo, recolhe o banner volumoso do topo
+  if(isOAuthConnected){
     if(wrapper) wrapper.style.display = 'none';
     if(box) box.classList.add('hidden');
     return;
@@ -6959,10 +6918,18 @@ function updateGCalBannerUI(){
     box.classList.add('disconnected');
   }
   if(dot) dot.classList.remove('linked');
-  title.innerHTML = 'Google Agenda: <span style="color:var(--ink-soft);font-weight:500;">Não vinculada</span>';
-  desc.textContent = 'Vincule seu e-mail do Google Agenda (Gmail) para sincronizar atendimentos automaticamente no seu celular.';
-  btn.innerHTML = '🔗 Vincular Minha Agenda';
-  if(syncAllBtn) syncAllBtn.style.display = 'none';
+
+  if(calId){
+    title.innerHTML = 'Google Agenda: <span style="color:#d97706;font-weight:700;">Aguardando Ativação (' + escapeHtml(calId) + ')</span>';
+    desc.textContent = 'E-mail configurado! Para subir eventos automaticamente no seu celular sem pedir permissão a terceiros, ative em 1 clique ou assine a agenda.';
+    btn.innerHTML = '⚡ Ativar Google Agenda';
+    if(syncAllBtn) syncAllBtn.style.display = 'inline-flex';
+  } else {
+    title.innerHTML = 'Google Agenda: <span style="color:var(--ink-soft);font-weight:500;">Não vinculada</span>';
+    desc.textContent = 'Vincule seu e-mail do Google Agenda (Gmail) para sincronizar atendimentos automaticamente no seu celular.';
+    btn.innerHTML = '🔗 Vincular Minha Agenda';
+    if(syncAllBtn) syncAllBtn.style.display = 'none';
+  }
 
   if(icsBtn){
     icsBtn.style.display = schedules.length > 0 ? 'inline-flex' : 'none';
@@ -7088,6 +7055,10 @@ function limparGoogleCalendarToken(){
 
 function conectarGoogleAgendaOAuth(onSuccess, onError){
   var clientId = obterGoogleClientId();
+  if(!clientId){
+    if(onError) onError(new Error('Google Client ID não configurado.'));
+    return;
+  }
   if(typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2){
     if(onError) onError(new Error('Serviço Google Identity Services não carregado'));
     return;
@@ -7097,10 +7068,12 @@ function conectarGoogleAgendaOAuth(onSuccess, onError){
       client_id: clientId,
       scope: 'openid email profile https://www.googleapis.com/auth/calendar.events',
       error_callback: function(err){
+        console.warn('Erro de autorização Google GIS:', err);
         if(onError) onError(err);
       },
       callback: async function(resp){
         if(resp.error){
+          console.warn('Resposta com erro de autorização Google:', resp);
           if(onError) onError(resp);
           return;
         }
@@ -7124,8 +7097,9 @@ function conectarGoogleAgendaOAuth(onSuccess, onError){
         if(onSuccess) onSuccess(token);
       }
     });
-    tokenClient.requestAccessToken({ prompt: '' });
+    tokenClient.requestAccessToken({ prompt: 'consent' });
   }catch(err){
+    console.warn('Exceção ao iniciar tokenClient Google:', err);
     if(onError) onError(err);
   }
 }
@@ -7281,32 +7255,36 @@ function openCalendarSettingsModal(){
   var feedUrl = (scriptUrl() && scriptUrl() !== 'demo')
     ? (scriptUrl() + '?action=calendar_feed&usuarioId=' + encodeURIComponent(getActiveUsuarioId() || calId))
     : '';
+  var webcalFeedUrl = feedUrl ? feedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
+  var gcalSubUrl = feedUrl ? ('https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcalFeedUrl)) : '';
 
   var statusBadge = isOAuthConnected
-    ? '<span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">✓ Conectado em 1 Clique</span>'
-    : '<span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">Pronto para conectar</span>';
+    ? '<span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">✓ Conectado via OAuth (Gravação Direta)</span>'
+    : (calId
+        ? '<span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">E-mail Configurado (Pendente de Conexão)</span>'
+        : '<span style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">Não Vinculada</span>');
 
   var html = '<div class="modal-bg" onclick="closeModalBg(event)">' +
     '<div class="modal">' +
       '<div class="grabber"></div>' +
       '<h2>📅 Conexão com Google Agenda &amp; Rotas</h2>' +
       '<p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;line-height:1.45;">' +
-        'Vincule sua <strong>Google Agenda</strong> para que atendimentos, reagendamentos e férias apareçam automaticamente no seu celular.' +
+        'Vincule sua <strong>Google Agenda</strong> para que atendimentos, reagendamentos e férias apareçam automaticamente no aplicativo Google Agenda do seu celular.' +
       '</p>' +
 
-      '<!-- CARD PRINCIPAL: GOOGLE OAUTH 1-CLIQUE -->' +
+      '<!-- CARD 1: GOOGLE OAUTH 1-CLIQUE -->' +
       '<div style="background:var(--surface);border:1.5px solid ' + (isOAuthConnected ? '#86efac' : '#93c5fd') + ';border-radius:12px;padding:14px;margin-bottom:14px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
           '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<span style="font-size:16px;">🗓️</span>' +
-            '<strong style="font-size:13px;color:var(--ink);">Sincronização 100% Automática</strong>' +
+            '<span style="font-size:16px;">⚡</span>' +
+            '<strong style="font-size:13px;color:var(--ink);">Opção 1: Conexão Oficial Google (Gravação Direta)</strong>' +
           '</div>' +
           statusBadge +
         '</div>' +
         '<p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.45;">' +
           (isOAuthConnected
-            ? 'Sua Google Agenda está conectada diretamente. Todos os novos atendimentos, remarcações e cancelamentos entram instantaneamente no aplicativo Google Agenda do seu celular sem precisar compartilhar nada com ninguém.'
-            : 'Conecte sua conta do Google em 1 clique. O aplicativo grava direto na sua agenda particular com segurança oficial do Google.') +
+            ? 'Sua Google Agenda está conectada diretamente. Todos os novos atendimentos e alterações entram instantaneamente no aplicativo Google Agenda do seu celular sem precisar compartilhar nada com terceiros.'
+            : 'Conecte sua conta em 1 clique com autorização oficial do Google. O aplicativo grava direto na sua agenda particular com segurança.') +
         '</p>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
           (isOAuthConnected
@@ -7319,21 +7297,31 @@ function openCalendarSettingsModal(){
         '</div>' +
       '</div>' +
 
-      '<label>Seu E-mail do Google (Gmail)</label>' +
-      '<input id="modalCalendarIdInput" type="email" placeholder="Ex: seuemail@gmail.com" value="' + escapeHtml(calId) + '" autocomplete="email">' +
-
+      '<!-- CARD 2: ASSINATURA ICAL (100% GARANTIDA, NUNCA EXPIRA) -->' +
       (feedUrl ? (
-        '<div style="margin-top:12px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;">' +
-          '<div style="font-weight:700;font-size:12px;color:var(--ink);margin-bottom:3px;">📡 Ou Assine via Link iCal (Ao Vivo no Calendário):</div>' +
-          '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:6px;line-height:1.4;">' +
-            'Adicione no Google Agenda ("Outras agendas &gt; Do URL") ou iPhone para sincronização contínua sem login:' +
+        '<div style="background:var(--surface);border:1.5px solid #a7f3d0;border-radius:12px;padding:14px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
+            '<div style="display:flex;align-items:center;gap:6px;">' +
+              '<span style="font-size:16px;">📡</span>' +
+              '<strong style="font-size:13px;color:var(--ink);">Opção 2: Assinar no Google Agenda (Zero Login, Nunca Expira)</strong>' +
+            '</div>' +
+            '<span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">Recomendado</span>' +
           '</div>' +
-          '<div style="display:flex;gap:6px;align-items:center;">' +
-            '<input id="modalIcsFeedInp" type="text" readonly value="' + escapeHtml(feedUrl) + '" style="font-size:11px;padding:6px;font-family:monospace;background:var(--surface);">' +
-            '<button class="btn small ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById(\'modalIcsFeedInp\').value);showToast(\'Link iCal copiado!\',\'ok\')">Copiar</button>' +
+          '<p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.45;">' +
+            'Adicione a agenda de atendimentos do FisioFlow direto no seu Google Agenda. Não pede login frequente e sincroniza no celular automaticamente:' +
+          '</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
+            '<a class="btn primary small" href="' + escapeHtml(gcalSubUrl) + '" target="_blank" rel="noopener noreferrer" style="background:#15803d;border-color:#15803d;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;color:#fff;">' +
+              '📅 Abrir e Assinar no Google Agenda' +
+            '</a>' +
+            '<button class="btn small ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById(\'modalIcsFeedInp\').value);showToast(\'Link iCal copiado! Cole no Google Agenda em Outras agendas > Do URL\',\'ok\')">📋 Copiar Link iCal</button>' +
           '</div>' +
+          '<input id="modalIcsFeedInp" type="text" readonly value="' + escapeHtml(feedUrl) + '" style="font-size:10.5px;padding:6px;font-family:monospace;background:var(--bg);width:100%;border:1px solid var(--line);border-radius:6px;">' +
         '</div>'
       ) : '') +
+
+      '<label>Seu E-mail do Google (Gmail)</label>' +
+      '<input id="modalCalendarIdInput" type="email" placeholder="Ex: seuemail@gmail.com" value="' + escapeHtml(calId) + '" autocomplete="email">' +
 
       '<div class="form-section-title" style="margin-top:16px;">🚗 Parâmetros de Rota e Combustível</div>' +
       '<label>Seu Endereço Base (Casa / Consultório)</label>' +
@@ -7391,35 +7379,32 @@ async function testGoogleCalendarConnection(){
         resBox.innerHTML = '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">✅ Conexão 100% Automática Ativa!</div>' +
           '<div style="font-size:12px;line-height:1.45;">' +
             'Conectado diretamente à sua conta: <strong>' + escapeHtml(calData.summary || 'Principal') + '</strong>.<br>' +
-            'Todos os novos agendamentos e alterações entram automaticamente no aplicativo Google Agenda do seu celular em tempo real.' +
+            'Todos os novos agendamentos e alterações entram automaticamente no aplicativo Google Agenda do seu celular em tempo real via API oficial.' +
           '</div>';
         return;
+      } else if(testRes.status === 401){
+        limparGoogleCalendarToken();
       }
     }catch(e){}
   }
 
-  // Teste de fallback
   var inp = document.getElementById('modalCalendarIdInput');
   var calId = inp ? inp.value.trim() : getUserCalendarId();
-  try{
-    var resp = await postAction({ action: 'test_calendar', calendarId: calId });
-    if(resp.mode === 'direct_native' || resp.mode === 'direct_shared'){
-      resBox.style.background = 'var(--ok-bg)';
-      resBox.style.border = '1px solid var(--ok)';
-      resBox.style.color = '#2b4718';
-      resBox.innerHTML = '✅ <strong>Conexão ativa!</strong> Agendamentos sincronizam diretamente com a sua agenda.';
-    } else {
-      resBox.style.background = '#e0f2fe';
-      resBox.style.border = '1px solid #7dd3fc';
-      resBox.style.color = '#0369a1';
-      resBox.innerHTML = '💡 <strong>Dica:</strong> Para gravar 100% automático no seu celular sem convites, clique no botão azul <strong>"Conectar Minha Google Agenda (1 Clique)"</strong> no topo!';
-    }
-  }catch(err){
-    resBox.style.background = '#e0f2fe';
-    resBox.style.border = '1px solid #7dd3fc';
-    resBox.style.color = '#0369a1';
-    resBox.innerHTML = '💡 <strong>Dica:</strong> Conecte sua agenda em 1 clique clicando no botão azul <strong>"Conectar Minha Google Agenda (1 Clique)"</strong> no topo!';
-  }
+  var feedUrl = (scriptUrl() && scriptUrl() !== 'demo')
+    ? (scriptUrl() + '?action=calendar_feed&usuarioId=' + encodeURIComponent(getActiveUsuarioId() || calId))
+    : '';
+  var webcalFeedUrl = feedUrl ? feedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
+  var gcalSubUrl = feedUrl ? ('https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcalFeedUrl)) : '';
+
+  resBox.style.background = '#fef3c7';
+  resBox.style.border = '1.5px solid #fde68a';
+  resBox.style.color = '#92400e';
+  resBox.innerHTML = '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">⚠️ Gravação direta via OAuth pendente de ativação</div>' +
+    '<div style="font-size:12px;line-height:1.5;">' +
+      'Para que seus agendamentos apareçam no celular sem pedir permissão a terceiros, escolha uma das opções:<br><br>' +
+      '• <strong>Opção 1 (Recomendada - Zero Login):</strong> Clique em <a href="' + escapeHtml(gcalSubUrl) + '" target="_blank" style="color:#15803d;font-weight:700;">[📅 Abrir e Assinar no Google Agenda]</a> para adicionar a escala direto no aplicativo Google Agenda do seu celular.<br><br>' +
+      '• <strong>Opção 2 (OAuth 1-Clique):</strong> Clique no botão azul <b>[🔗 Conectar Minha Google Agenda (1 Clique)]</b> para autorizar a gravação direta instantânea.' +
+    '</div>';
 }
 
 function saveCalendarSettings(){
@@ -9725,6 +9710,7 @@ async function submitSchedule(){
   var patTel = p.telefone || '';
   var patEnd = [p.endereco, p.bairro, p.cidade].filter(Boolean).join(', ');
 
+  var directSyncedCount = 0;
   // Sincronização direta na Google Agenda via API v3 (OAuth oficial 1-clique)
   var gcalToken = obterGoogleCalendarTokenSalvo();
   if(gcalToken){
@@ -9733,6 +9719,7 @@ async function submitSchedule(){
         var directEvId = await createDirectGCalEvent(createdItems[gIdx]);
         if(directEvId){
           createdItems[gIdx].calendarEventId = directEvId;
+          directSyncedCount++;
         }
       }catch(e){}
     }
@@ -9755,7 +9742,9 @@ async function submitSchedule(){
         saveLocalSchedules();
         renderAgendaTab();
       }
-      showToast('Sincronizado com o Google Agenda!', 'ok');
+      if(createdItems[0].calendarEventId){
+        showToast('Sincronizado com o Google Agenda!', 'ok');
+      }
     } else {
       var batchItems = createdItems.map(function(it){
         return Object.assign({}, it, {
@@ -9770,15 +9759,20 @@ async function submitSchedule(){
         items: batchItems
       });
       var evMap = (respB && (respB.eventMap || respB.eventIds)) || null;
+      var remoteSynced = 0;
       if(evMap){
         createdItems.forEach(function(it){
-          if(evMap[it.id] && !it.calendarEventId) it.calendarEventId = evMap[it.id];
+          if(evMap[it.id] && !it.calendarEventId){
+            it.calendarEventId = evMap[it.id];
+            remoteSynced++;
+          }
         });
         saveLocalSchedules();
         renderAgendaTab();
       }
-      if(respB && respB.calendarSyncedCount > 0){
-        showToast(respB.calendarSyncedCount + ' evento(s) na Google Agenda!', 'ok');
+      var totalSynced = directSyncedCount + remoteSynced;
+      if(totalSynced > 0){
+        showToast(totalSynced + ' evento(s) na Google Agenda!', 'ok');
       }
     }
   }catch(err){
@@ -9898,7 +9892,9 @@ async function submitEditSchedule(id){
       saveLocalSchedules();
       renderAgendaTab();
     }
-    showToast('Google Agenda atualizada!', 'ok');
+    if(sc.calendarEventId){
+      showToast('Google Agenda atualizada!', 'ok');
+    }
   }catch(err){
     console.warn('Aviso ao sincronizar edição de agendamento:', err);
   }
@@ -10575,7 +10571,14 @@ async function syncAllSchedulesWithGCal(silent){
 
     var count = (resp && typeof resp.calendarSyncedCount === 'number') ? resp.calendarSyncedCount : synced;
     if(!silent){
-      showToast('✅ ' + count + ' agendamento(s) sincronizados com o Google Agenda (' + calId + ')!', 'ok');
+      if(count > 0){
+        showToast('✅ ' + count + ' agendamento(s) sincronizados com o Google Agenda (' + calId + ')!', 'ok');
+      } else if(obterGoogleCalendarTokenSalvo()){
+        showToast('Nenhum agendamento pendente para sincronizar.', 'info');
+      } else {
+        showToast('⚠️ Gravação direta não conectada. Conecte no botão [⚙️ Google Agenda] ou assine via link iCal.', 'warn');
+        openCalendarSettingsModal();
+      }
     }
   }catch(err){
     console.warn('Erro ao sincronizar agendamentos em lote:', err);
