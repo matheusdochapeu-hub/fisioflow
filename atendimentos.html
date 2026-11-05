@@ -674,7 +674,17 @@
   .gcal-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);min-width:0;flex:1;}
   .gcal-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;}
   .gcal-dot.linked{background:var(--success);}
-  .gcal-toggle-pill{
+    .btn-gcal-discreet{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:99px;padding:3px 10px;cursor:pointer;
+    box-shadow:0 1px 2px rgba(0,0,0,0.03);font-family:inherit;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .btn-gcal-discreet:hover{
+    background:var(--bg-tint);border-color:var(--line-strong);
+  }
+.gcal-toggle-pill{
     font-size:10.5px;font-weight:600;color:var(--primary);
     background:var(--primary-soft);padding:3px 8px;border-radius:99px;
     flex-shrink:0;border:1px solid var(--line-strong);
@@ -1314,6 +1324,15 @@
           </div>
         </div>
       </details>
+
+      <!-- Botão discreto para quando a agenda estiver conectada/testada -->
+      <div id="gcalConnectedBar" style="display:none;justify-content:flex-end;align-items:center;margin-bottom:8px;">
+        <button type="button" class="btn-gcal-discreet" onclick="openCalendarSettingsModal()" title="Google Agenda conectada. Toque para gerenciar configurações.">
+          <span style="color:#16a34a;font-weight:700;font-size:11.5px;">✓</span>
+          <span id="gcalDiscreetLabel" style="font-size:11px;color:var(--ink-soft);font-weight:500;">Google Agenda Conectada</span>
+          <span style="font-size:10.5px;color:var(--primary);font-weight:600;margin-left:4px;border-left:1px solid var(--line);padding-left:6px;">⚙ Configurar</span>
+        </button>
+      </div>
 
       <div class="month-nav">
         <button onclick="shiftAgendaMonth(-1)" aria-label="Mês anterior">&lsaquo;</button>
@@ -7368,11 +7387,15 @@ function updateGCalBannerUI(){
   var syncAllBtn = document.getElementById('gcalSyncAllBtn');
   var icsBtn = document.getElementById('agendaExportIcsBtn');
   var gcalActionBtn = document.getElementById('agendaGCalBtn');
+  var connectedBar = document.getElementById('gcalConnectedBar');
+  var discreetLabel = document.getElementById('gcalDiscreetLabel');
   var isOAuthConnected = !!obterGoogleCalendarTokenSalvo();
   var isSubscribed = localStorage.getItem('ff_gcal_subscribed') === '1';
+  var isTested = localStorage.getItem('ff_gcal_tested') === '1' || localStorage.getItem('ff_gcal_verified') === '1';
+  var isConnected = isOAuthConnected || isSubscribed || isTested;
 
   if(gcalActionBtn){
-    if(isOAuthConnected || isSubscribed){
+    if(isConnected){
       gcalActionBtn.innerHTML = '⚙️ Google Agenda <span style="color:var(--success);font-weight:900;margin-left:2px;">✓ Fisioflow</span>';
       gcalActionBtn.title = 'Agenda Fisioflow conectada (' + (calId || 'Fisioflow') + '). Sincronização com o celular ativa.';
     } else if(calId){
@@ -7384,12 +7407,20 @@ function updateGCalBannerUI(){
     }
   }
 
-  // Quando conectado diretamente via OAuth ou já assinada a agenda Fisioflow, recolhe o banner volumoso do topo
-  if(isOAuthConnected || isSubscribed){
+  // Quando conectado ou testado com sucesso:
+  // Faz sumir o aviso de "assinatura pendente" e recolhe tudo no botão discreto "Configurar"
+  if(isConnected){
     if(wrapper) wrapper.style.display = 'none';
     if(box) box.classList.add('hidden');
+    if(connectedBar){
+      connectedBar.style.display = 'flex';
+      if(discreetLabel){
+        discreetLabel.textContent = calId ? ('Agenda: ' + calId) : 'Agenda Conectada';
+      }
+    }
     return;
   } else {
+    if(connectedBar) connectedBar.style.display = 'none';
     if(wrapper) wrapper.style.display = '';
     if(box) box.classList.remove('hidden');
   }
@@ -7417,6 +7448,24 @@ function updateGCalBannerUI(){
   if(icsBtn){
     icsBtn.style.display = schedules.length > 0 ? 'inline-flex' : 'none';
   }
+}
+
+function verificarConexaoGCalSilenciosa(){
+  var calId = getUserCalendarId();
+  if(!calId || scriptUrl() === 'demo') return;
+  var isAlready = localStorage.getItem('ff_gcal_subscribed') === '1' || localStorage.getItem('ff_gcal_tested') === '1';
+  if(isAlready) return;
+  var uId = getActiveUsuarioId();
+  var feedUrl = scriptUrl() + '?action=calendar_feed&usuarioId=' + encodeURIComponent(uId || calId) + '&email=' + encodeURIComponent(calId);
+  fetch(feedUrl).then(function(res){ return res.text(); }).then(function(text){
+    if(text && text.indexOf('BEGIN:VCALENDAR') !== -1){
+      try {
+        localStorage.setItem('ff_gcal_subscribed', '1');
+        localStorage.setItem('ff_gcal_tested', '1');
+      } catch(e){}
+      updateGCalBannerUI();
+    }
+  }).catch(function(){});
 }
 
 function getHomeAddress(){
@@ -7742,7 +7791,10 @@ function marcarAgendaAssinada(){
 
 function desconectarGoogleAgendaModal(){
   if(confirm('Deseja desativar o vínculo da agenda Fisioflow com o Google Agenda?')){
-    try { localStorage.removeItem('ff_gcal_subscribed'); } catch(e){}
+    try {
+      localStorage.removeItem('ff_gcal_subscribed');
+      localStorage.removeItem('ff_gcal_tested');
+    } catch(e){}
     limparGoogleCalendarToken();
     showToast('Agenda Fisioflow desvinculada.', 'info');
     updateGCalBannerUI();
@@ -7892,6 +7944,11 @@ async function testGoogleCalendarConnection(){
     var text = await res.text();
     if(res.ok && text.indexOf('BEGIN:VCALENDAR') !== -1){
       var eventCount = (text.match(/BEGIN:VEVENT/g) || []).length;
+      try {
+        localStorage.setItem('ff_gcal_subscribed', '1');
+        localStorage.setItem('ff_gcal_tested', '1');
+      } catch(e){}
+      updateGCalBannerUI();
       resBox.style.background = 'var(--ok-bg)';
       resBox.style.border = '1px solid var(--ok)';
       resBox.style.color = '#2b4718';
@@ -7900,6 +7957,7 @@ async function testGoogleCalendarConnection(){
           'O servidor respondeu com o calendário <strong>Fisioflow</strong>.<br>' +
           '• Total de agendamentos no feed: <strong>' + eventCount + '</strong>.<br>' +
           '• Status do feed: <strong>100% Ativo e Válido (RFC 5545)</strong>.<br>' +
+          '• <strong>Conexão ativada:</strong> O aviso de assinatura pendente foi removido e a agenda está conectada.<br>' +
           'Seus atendimentos já estão disponíveis para o Google Agenda do seu celular e computador!' +
         '</div>';
       return;
@@ -8675,6 +8733,7 @@ function setAgendaStatusFilter(st){
 function renderAgendaTab(){
   reconcileSchedulesWithEntries();
   updateGCalBannerUI();
+  verificarConexaoGCalSilenciosa();
   updateCheckinTabVisibility();
   populateAgendaFilters();
 
