@@ -7884,8 +7884,22 @@ async function testGoogleCalendarConnection(){
           'Seus atendimentos já estão disponíveis para o Google Agenda do seu celular e computador!' +
         '</div>';
       return;
+    } else if(text.indexOf('"success":true') !== -1 || text.indexOf('"agendamentos"') !== -1){
+      resBox.style.background = '#fef2f2';
+      resBox.style.border = '1.5px solid #fca5a5';
+      resBox.style.color = '#991b1b';
+      resBox.innerHTML = '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">⚠️ O Apps Script no Google precisa ser atualizado</div>' +
+        '<div style="font-size:12px;line-height:1.45;">' +
+          'O servidor central retornou a versão antiga em JSON em vez do calendário Fisioflow.<br>' +
+          'Por isso o Google Agenda ainda não consegue ler os eventos e nomeia como link webcal.<br><br>' +
+          '<strong>Como ativar em 1 minuto:</strong><br>' +
+          '1. Acesse o editor do Apps Script da sua planilha central.<br>' +
+          '2. Cole o código atualizado do <code>Code.gs</code> e salve.<br>' +
+          '3. Clique em <b>Implantar > Gerenciar implantações > Editar (lápis) > Nova versão</b> e clique em <b>Implantar</b>.' +
+        '</div>';
+      return;
     } else {
-      throw new Error('Resposta inválida do servidor.');
+      throw new Error('Resposta inesperada do servidor.');
     }
   } catch(err) {
     resBox.style.background = '#fef3c7';
