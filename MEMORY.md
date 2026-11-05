@@ -8,8 +8,8 @@ Este documento registra de forma definitiva a arquitetura, regras de negócio ap
 - **Repositório:** `matheusdochapeu-hub/fisioflow` (Branch: `main`)
 - **PWA & Front-End:** Single Page Application (SPA) em HTML5/Vanilla JavaScript + CSS moderno (alta performance em dispositivos móveis).
 - **Back-End / API:** Google Apps Script (`Code.gs`) integrado ao Google Sheets com arquitetura multi-tenant.
-- **Service Worker:** `fisioflow-v32` (`sw.js`).
-- **Suíte de Testes:** Node.js native test runner (`node --test test/helpers.test.js`) com 100% de aprovação (119 testes integrados).
+- **Service Worker:** `fisioflow-v33` (`sw.js`).
+- **Suíte de Testes:** Node.js native test runner (`node --test test/helpers.test.js`) com 100% de aprovação (128 testes integrados).
 
 ---
 
@@ -68,3 +68,4 @@ A interface é composta por 5 abas com proporção uniforme de 20%, sem quebra d
 - **Proteção de Modais:** Proteção temporal `_modalOpenTs` com 350ms em `closeModalBg` impede que toques no celular fechem acidentalmente os modais de cadastro e edição no primeiro clique.
 - **Sincronização Multi-Dispositivo:** Ao abrir no celular ou computador, a versão mais recente da planilha do Google Sheets sempre prevalece sobre os caches locais de IndexedDB/localStorage.
 - **Limpeza de Planilhas:** As abas obsoletas `exercicios` e `rotinas` foram descontinuadas do fluxo ativo.
+- **PDFs sem Planos de Fundo:** Todos os PDFs exportados (Extrato, Prontuário de Evoluções, Comprovantes, Recibos e Relatórios) são gerados com fundo branco puro, limpo e profissional, sem marcas d'água decorativas, flores ou folhas (`marcaDaguaOutono` desativada).
