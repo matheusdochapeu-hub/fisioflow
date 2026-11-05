@@ -66,6 +66,14 @@ function resolveSpreadsheet_(usuarioId, meta) {
   var doc = String((meta && (meta.documento || meta.providerDoc)) || '').trim();
   var normalizedId = String(usuarioId || '').trim().toLowerCase();
 
+  // Se usuarioId contiver @, ele é um e-mail!
+  if (normalizedId.indexOf('@') > -1 && !email) {
+    email = normalizedId;
+  }
+  if (!normalizedId && email) {
+    normalizedId = email.toLowerCase();
+  }
+
   if (!usuarioId && !email) {
     return masterSs;
   }
@@ -89,7 +97,10 @@ function resolveSpreadsheet_(usuarioId, meta) {
       var rowEmail = String(data[i][1]).trim().toLowerCase();
       // Permite resolução segura por usuarioId ou pelo email cadastrado
       // Isso garante sincronização instantânea e perfeita entre Celular e Computador
-      if ((normalizedId && rowUid === normalizedId) || (email && rowEmail === email.toLowerCase())) {
+      var targetEmail = email ? email.toLowerCase() : '';
+      var matchUid = normalizedId && (rowUid === normalizedId || rowEmail === normalizedId);
+      var matchEmail = targetEmail && (rowEmail === targetEmail || rowUid === targetEmail);
+      if (matchUid || matchEmail) {
         foundRowIdx = i + 1;
         foundSheetId = String(data[i][4]).trim();
         _activeResolvedUserId_ = String(data[i][0]).trim();
@@ -432,11 +443,25 @@ function pad2_(n) {
 }
 
 function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
-  var dParts = String(dataStr || '').split('-');
-  if (dParts.length !== 3) return null;
-  var y = parseInt(dParts[0], 10);
-  var m = parseInt(dParts[1], 10);
-  var d = parseInt(dParts[2], 10);
+  var str = String(dataStr || '').trim();
+  var y, m, d;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    var parts = str.substring(0, 10).split('-');
+    y = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+    d = parseInt(parts[2], 10);
+  } else if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    var parts = str.substring(0, 10).split('/');
+    d = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+    y = parseInt(parts[2], 10);
+  } else {
+    var dParts = str.split('-');
+    if (dParts.length !== 3) return null;
+    y = parseInt(dParts[0], 10);
+    m = parseInt(dParts[1], 10);
+    d = parseInt(dParts[2], 10);
+  }
   if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
 
   var horaClean = String(horaStr || '').trim().toLowerCase();
@@ -471,7 +496,7 @@ function parseScheduleDates_(dataStr, horaStr, duracaoMin) {
     }
   } catch (e) {}
 
-  var dateFormatted = dParts[0] + '-' + pad2_(m) + '-' + pad2_(d) + ' ' + pad2_(hh) + ':' + pad2_(mm) + ':00';
+  var dateFormatted = y + '-' + pad2_(m) + '-' + pad2_(d) + ' ' + pad2_(hh) + ':' + pad2_(mm) + ':00';
   var start = null;
   try {
     start = Utilities.parseDate(dateFormatted, tz, 'yyyy-MM-dd HH:mm:ss');
@@ -805,7 +830,17 @@ function isInvalidOptionalName_(name) {
 }
 
 function formatIcsDateTime_(isoDate, timeStr) {
-  var d = String(isoDate || '').replace(/[^0-9]/g, '');
+  var str = String(isoDate || '').trim();
+  var d = '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    d = str.substring(0, 10).replace(/-/g, '');
+  } else if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    var p = str.substring(0, 10).split('/');
+    d = p[2] + p[1] + p[0];
+  } else {
+    var clean = str.replace(/[^0-9]/g, '');
+    d = clean.substring(0, 8);
+  }
   var tParts = String(timeStr || '14:00').split(':');
   var hh = pad2_(parseInt(tParts[0], 10) || 14);
   var mm = pad2_(parseInt(tParts[1], 10) || 0);
@@ -819,7 +854,9 @@ function buildIcsFeed_(items, usuarioId) {
     'PRODID:-//FisioFlow//Agendamentos//PT-BR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:FisioFlow - Atendimentos',
+    'X-WR-CALNAME:Fisioflow',
+    'NAME:Fisioflow',
+    'X-WR-CALDESC:Atendimentos Fisioflow',
     'X-WR-TIMEZONE:America/Sao_Paulo'
   ];
   var nowIso = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -834,7 +871,10 @@ function buildIcsFeed_(items, usuarioId) {
     var dtStart = formatIcsDateTime_(it.Data, hora);
     var endH = pad2_(dates.end.getHours());
     var endM = pad2_(dates.end.getMinutes());
-    var dtEnd = String(it.Data).replace(/[^0-9]/g, '') + 'T' + endH + endM + '00';
+    var endY = dates.end.getFullYear();
+    var endMo = pad2_(dates.end.getMonth() + 1);
+    var endD = pad2_(dates.end.getDate());
+    var dtEnd = '' + endY + endMo + endD + 'T' + endH + endM + '00';
 
     var isBlock = it.PacienteID === '__BLOQUEIO__' || it.Status === 'Ausência' || it.Status === 'Férias' || it.Tipo === 'Bloqueio';
     var title = isBlock ? ('🏖️ ' + (it.PacienteNome || 'Férias / Ausência')) : (it.PacienteNome || 'Paciente');
@@ -867,7 +907,11 @@ function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'calendar_feed' || action === 'feed_ics' || action === 'ics') {
     var usuarioIdFeed = (e && e.parameter && (e.parameter.usuarioId || e.parameter.email)) || '';
-    var feedSs = resolveSpreadsheet_(usuarioIdFeed, (e && e.parameter) || {});
+    var emailFeed = (e && e.parameter && (e.parameter.email || e.parameter.calendarId)) || '';
+    var metaFeed = (e && e.parameter) || {};
+    if (!metaFeed.email && emailFeed) metaFeed.email = emailFeed;
+    if (!metaFeed.email && usuarioIdFeed.indexOf('@') > -1) metaFeed.email = usuarioIdFeed;
+    var feedSs = resolveSpreadsheet_(usuarioIdFeed, metaFeed);
     _currentSS_ = feedSs;
     var rawAgendFeed = sheetToObjects_(getAgendSheet_());
     var activeAgendFeed = rawAgendFeed.filter(function(a){

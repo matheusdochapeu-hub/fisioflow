@@ -465,6 +465,9 @@ describe('Google Calendar Integration Helpers', () => {
     ], 'scarletsantos7@gmail.com');
 
     assert.match(feed, /BEGIN:VCALENDAR/);
+    assert.match(feed, /X-WR-CALNAME:Fisioflow/);
+    assert.match(feed, /NAME:Fisioflow/);
+    assert.match(feed, /X-WR-CALDESC:Atendimentos Fisioflow/);
     assert.match(feed, /VERSION:2\.0/);
     assert.match(feed, /BEGIN:VEVENT/);
     assert.match(feed, /UID:ag_test_1@fisioflow/);
@@ -1213,6 +1216,58 @@ describe('Transparência e Sincronização Google Agenda (v33)', () => {
 
     const withGCal = resolveScheduleToast({ id: 'ag_2', calendarEventId: 'ev_12345' }, 0);
     assert.equal(withGCal.gcalToast, 'Sincronizado com o Google Agenda!');
+  });
+
+  test('atendimentos.html removeu o botão de OAuth em 1 clique e tornou assinatura da agenda Fisioflow a opção oficial', () => {
+    const htmlAtend = fs.readFileSync(path.join(__dirname, '..', 'atendimentos.html'), 'utf8');
+    assert.equal(htmlAtend.includes('Conectar Minha Google Agenda (1 Clique)'), false, 'Botão OAuth removido a pedido do usuário');
+    assert.equal(htmlAtend.includes('Opção 1: Conexão Oficial Google (Gravação Direta)'), false, 'Card OAuth removido');
+    assert.ok(htmlAtend.includes('Adicionar Agenda "Fisioflow" no Google Agenda'), 'Botão oficial de assinatura da agenda Fisioflow deve existir');
+    assert.ok(htmlAtend.includes('Passo Obrigatório: Google Agenda (Fisioflow)'), 'Passo destacado no onboarding');
+  });
+
+  test('resolveSpreadsheet_ lógica de matching multi-tenant encontra usuário por email ou usuarioId', () => {
+    const usersSheetData = [
+      ['ID', 'Email', 'Nome', 'Documento', 'SpreadsheetID'],
+      ['usr_123', 'corredoresantifascistas@gmail.com', 'Camila Santos', 'CREFITO-123', 'sheet_abc_456']
+    ];
+
+    function mockResolveUser(usuarioId, meta) {
+      let email = String((meta && (meta.email || meta.calendarId)) || '').trim();
+      let normalizedId = String(usuarioId || '').trim().toLowerCase();
+      if (normalizedId.indexOf('@') > -1 && !email) {
+        email = normalizedId;
+      }
+      if (!normalizedId && email) {
+        normalizedId = email.toLowerCase();
+      }
+      const targetEmail = email ? email.toLowerCase() : '';
+      for (let i = 1; i < usersSheetData.length; i++) {
+        const rowUid = String(usersSheetData[i][0]).trim().toLowerCase();
+        const rowEmail = String(usersSheetData[i][1]).trim().toLowerCase();
+        const matchUid = normalizedId && (rowUid === normalizedId || rowEmail === normalizedId);
+        const matchEmail = targetEmail && (rowEmail === targetEmail || rowUid === targetEmail);
+        if (matchUid || matchEmail) {
+          return { found: true, sheetId: usersSheetData[i][4], resolvedId: usersSheetData[i][0] };
+        }
+      }
+      return { found: false };
+    }
+
+    // Cenário 1: Busca pelo usr_123
+    const res1 = mockResolveUser('usr_123', {});
+    assert.equal(res1.found, true);
+    assert.equal(res1.sheetId, 'sheet_abc_456');
+
+    // Cenário 2: Feed iCal passou apenas usuarioId=corredoresantifascistas@gmail.com
+    const res2 = mockResolveUser('corredoresantifascistas@gmail.com', {});
+    assert.equal(res2.found, true, 'Deve encontrar a planilha mesmo se passar email no lugar do ID');
+    assert.equal(res2.sheetId, 'sheet_abc_456');
+
+    // Cenário 3: Passou email no meta
+    const res3 = mockResolveUser('', { email: 'corredoresantifascistas@gmail.com' });
+    assert.equal(res3.found, true);
+    assert.equal(res3.sheetId, 'sheet_abc_456');
   });
 });
 
