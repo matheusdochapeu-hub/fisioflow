@@ -8,7 +8,7 @@ Este documento registra de forma definitiva a arquitetura, regras de negócio ap
 - **Repositório:** `matheusdochapeu-hub/fisioflow` (Branch: `main`)
 - **PWA & Front-End:** Single Page Application (SPA) em HTML5/Vanilla JavaScript + CSS moderno (alta performance em dispositivos móveis).
 - **Back-End / API:** Google Apps Script (`Code.gs`) integrado ao Google Sheets com arquitetura multi-tenant.
-- **Service Worker:** `fisioflow-v34` (`sw.js`).
+- **Service Worker:** `fisioflow-v46` (`sw.js`).
 - **Suíte de Testes:** Node.js native test runner (`node --test test/helpers.test.js`) com 100% de aprovação (136 testes integrados).
 
 ---

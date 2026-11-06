@@ -1,7 +1,20 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
-Data da consolidação: `04/11/2026`  
-Versão do Service Worker: `fisioflow-v35` (`sw.js`)
+Data da consolidação: `06/11/2026`  
+Versão do Service Worker: `fisioflow-v46` (`sw.js`)
+
+---
+
+## 25. Padronização de Botões em Formato Pílula (Pill Buttons) nas Abas Pacientes e Financeiro (`v46`)
+- **1. Formato Pílula Padronizado (Full-Width Pill Action Stack):**
+  - Implementado sistema de estilos CSS unificado (`.pill-action-stack` e `.btn-pill`) com altura de 38px, bordas arredondadas em cápsula (`border-radius: 999px`), fonte semibold (13px), ícones centrais e largura total (100%).
+- **2. Aba Pacientes:**
+  - Check-in, Agendar, Evolução, Evoluções, Dados cadastrais, Exames, Documentos, Financeiro paciente, Finalizar/Reativar e Excluir paciente.
+- **3. Aba Financeiro:**
+  - Registrar pagamento (quando pendente), Recibo, Editar e Excluir.
+- **Service Worker & Testes:**
+  - Versão do Service Worker incrementada para `fisioflow-v46` (`sw.js`).
+  - 167 testes automatizados executados e 100% aprovados.
 
 ---
 
