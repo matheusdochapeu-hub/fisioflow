@@ -1484,7 +1484,9 @@ function doPost(e) {
             ev.fc || '',
             ev.estadoClinico || '',
             ev.condutas || '',
-            ev.criadoEm || nowIso
+            ev.criadoEm || nowIso,
+            ev.spo2 || '',
+            ev.observacoes || ''
           ];
         });
         var sEvoSheet = getEvoSheet_();
