@@ -1,7 +1,14 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `10/11/2026`  
-Versão do Service Worker: `fisioflow-v47` (`sw.js`)
+Versão do Service Worker: `fisioflow-v48` (`sw.js`)
+
+---
+
+## 27. Duplicidade só é sinalizada com valor em aberto (`v48`)
+- **Regra de mês fechado:** se **todas** as linhas repetidas de um grupo já estão `Pago`, o app não sinaliza nada — o histórico pago continua valendo integralmente (ex.: Dona Diva 15/09, duas linhas de R$ 100 pagas).
+- **Quando age:** a deduplicação marca linhas extras apenas se houver pelo menos um lançamento em aberto no grupo.
+- **Testes:** +2 casos (105 no total).
 
 ---
 
