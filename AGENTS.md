@@ -32,7 +32,7 @@ node --test test/**/*.test.js   # 101 testes (helpers + pós-ações)
 ## Deploy
 
 - GitHub Pages a partir da `main`: <https://matheusdochapeu-hub.github.io/fisioflow/>
-- Sem workflow de deploy nem de CI hoje (ponto de melhoria).
+- CI em `.github/workflows/ci.yml`: roda a suíte (101 testes) em todo push/PR.
 
 ## Arquivos-chave
 
