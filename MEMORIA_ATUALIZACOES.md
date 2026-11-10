@@ -1,7 +1,19 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
-Data da consolidação: `06/11/2026`  
-Versão do Service Worker: `fisioflow-v46` (`sw.js`)
+Data da consolidação: `10/11/2026`  
+Versão do Service Worker: `fisioflow-v47` (`sw.js`)
+
+---
+
+## 26. Deduplicação Financeira com Histórico Preservado (`v47`)
+- **Problema:** o Financeiro contava linhas de lançamento, não sessões. Lançamentos repetidos (mesma paciente + mesma data + mesmo horário) inflavam "sessões realizadas" e o ganho real; o sintoma aparecia igual ao do app da Scarlet (código irmão).
+- **Nada é apagado:** as linhas repetidas permanecem na planilha e na lista, marcadas com `Duplicado · fora dos totais`.
+- **Núcleo (`buildDuplicateIndex` / `rebuildFinancialDupIndex`):** escolhe a linha canônica (vinculada à Agenda > paga > mais antiga) e ignora as demais nos totais; `Somar mesmo assim` / `Não somar` controla a exceção (localStorage `ft_dup_keep_v1`).
+- **Cálculos alinhados:** KPIs e previsão do Financeiro, relatório, PDF anual, extrato do paciente, comprovantes e calendário do relatório.
+- **Backend (`Code.gs`):** `create` idempotente por ID e por sessão (paciente + data + horário), devolvendo `duplicateOf`; o check-in vincula ao lançamento existente em vez de duplicar; auto check-in da evolução sincroniza o agendamento.
+- **Service Worker:** `fisioflow-v47`; 107 testes (7 novos de deduplicação + 4 de pós-ações).
+
+---
 
 ---
 
