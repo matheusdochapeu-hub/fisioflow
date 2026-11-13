@@ -1,7 +1,15 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `10/11/2026`  
-Versão do Service Worker: `fisioflow-v49` (`sw.js`)
+Versão do Service Worker: `fisioflow-v50` (`sw.js`)
+
+---
+
+## 29. Reajuste com seleção e edição manual (`v50`)
+- **Seleção por paciente:** checkbox em cada linha (todos marcados por padrão) e "selecionar todos"; botão "Aplicar selecionados (N)".
+- **Edição manual:** a coluna "Novo valor" é editável — o valor sugerido (inflação + 2,5%) é apenas o ponto de partida.
+- **Aplicação segura:** linha aplicada fica travada para não reaplicar nem compor reajuste sobre reajuste.
+- **Service Worker:** `fisioflow-v50`.
 
 ---
 
