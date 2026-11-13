@@ -1718,3 +1718,28 @@ describe('deduplicação em mês fechado', () => {
     assert.deepEqual(buildDuplicateIndex(list, {}, dupKey), { e2: 'e1' });
   });
 });
+﻿
+describe('computeAdjustedPrice (reajuste inflação + 2,5%)', () => {
+  const computeAdjustedPrice = extractFn('computeAdjustedPrice');
+
+  test('aplica inflação + 2,5% e arredonda para cima em múltiplos de 5', () => {
+    const r = computeAdjustedPrice(95, 4.5, 5);
+    assert.ok(Math.abs(r.exato - 101.65) < 1e-9);
+    assert.ok(Math.abs(r.pct - 7) < 1e-9);
+    assert.equal(r.arredondado, 105);
+  });
+
+  test('arredonda em múltiplos de 10 quando solicitado', () => {
+    assert.equal(computeAdjustedPrice(95, 4.5, 10).arredondado, 110);
+  });
+
+  test('sessão sem valor permanece zero', () => {
+    assert.equal(computeAdjustedPrice(0, 4.5, 5).arredondado, 0);
+    assert.equal(computeAdjustedPrice('', 4.5, 5).exato, 0);
+  });
+
+  test('arredonda sempre para cima (nunca para baixo)', () => {
+    assert.equal(computeAdjustedPrice(90, 4.5, 5).arredondado, 100);
+    assert.equal(computeAdjustedPrice(100, 0, 5).arredondado, 105);
+  });
+});

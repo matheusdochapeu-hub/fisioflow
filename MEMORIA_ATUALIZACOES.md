@@ -1,7 +1,16 @@
 # Memória de Atualizações — FisioFlow (`fisioflow`)
 
 Data da consolidação: `10/11/2026`  
-Versão do Service Worker: `fisioflow-v48` (`sw.js`)
+Versão do Service Worker: `fisioflow-v49` (`sw.js`)
+
+---
+
+## 28. Ticket Médio, Relatório Completo e Reajuste de Sessão (`v49`)
+- **Ticket médio no Financeiro:** chip "ticket médio (mês)" e linha com ticket do mês e ticket geral (todo o histórico).
+- **Ticket médio por mês:** seção no Relatório anual.
+- **Relatório completo em PDF:** resumo, consolidado mês a mês (com ticket), por paciente (com ticket), formas de pagamento, sessões e previsão; botão separado para o consolidado anual.
+- **Calculadora de reajuste:** inflação + 2,5%, arredondamento para cima em múltiplos de R$ 5/R$ 10, aplicação por paciente ou em todos (altera o valor padrão; sessões já lançadas não mudam).
+- **Service Worker:** `fisioflow-v49`; +4 testes (109 no total).
 
 ---
 
